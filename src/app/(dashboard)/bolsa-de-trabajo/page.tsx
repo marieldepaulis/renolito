@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
 import { Briefcase, Plus } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { formatDate, formatCurrency } from '@/lib/utils'
@@ -12,9 +13,11 @@ export default async function BolsaDeTrabajoPage() {
   if (!user) redirect('/login')
 
   const { data: membership } = await supabase
-    .from('org_members')
+    .from('organization_members')
     .select('organization_id, role')
     .eq('user_id', user.id)
+    .not('accepted_at', 'is', null)
+    .limit(1)
     .maybeSingle()
 
   if (!membership) redirect('/onboarding')
@@ -53,6 +56,13 @@ export default async function BolsaDeTrabajoPage() {
             Ofertas de trabajo técnico para producciones audiovisuales
           </p>
         </div>
+        <Link
+          href="/bolsa-de-trabajo/nueva"
+          className="inline-flex items-center gap-2 rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background hover:bg-foreground/90"
+        >
+          <Plus className="size-4" />
+          Nueva oferta
+        </Link>
       </div>
 
       {/* My org's offers */}

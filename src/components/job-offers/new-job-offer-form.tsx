@@ -1,0 +1,278 @@
+'use client'
+
+import { useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
+import type { Resolver } from 'react-hook-form'
+import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
+import { Loader2 } from 'lucide-react'
+
+interface Project {
+  id:    string
+  title: string
+}
+
+const Schema = z.object({
+  project_id:         z.string().uuid('Selecciona un proyecto'),
+  title:              z.string().min(2, 'Título requerido').max(200),
+  description:        z.string().min(2, 'Descripción requerida').max(2000),
+  speciality:         z.string().min(1, 'Especialidad requerida').max(100),
+  is_paid:            z.boolean().default(true),
+  is_barter:          z.boolean().default(false),
+  estimated_rate:     z.coerce.number().positive().optional(),
+  rate_unit:          z.enum(['hour', 'day', 'project', 'session']).optional(),
+  rate_currency:      z.string().length(3).default('EUR'),
+  barter_description: z.string().max(500).optional(),
+  max_applicants:     z.coerce.number().int().positive().optional(),
+  required_date:      z.string().optional(),
+  location:           z.string().max(200).optional(),
+})
+
+type FormData = z.infer<typeof Schema>
+
+const SPECIALITIES = [
+  'Dirección de fotografía',
+  'Cámara / Operador',
+  'Sonido directo',
+  'Dirección de arte',
+  'Maquillaje y peluquería',
+  'Vestuario',
+  'Montaje / Edición',
+  'Colorización',
+  'Mezcla de sonido',
+  'Producción musical',
+  'Ingeniero de grabación',
+  'Técnico de luces',
+  'Técnico de grúa / Drone',
+  'Asistente de cámara',
+  'Asistente de dirección',
+  'Script / Continuista',
+  'Productor de campo',
+  'Postproducción VFX',
+  'Diseño gráfico / Motion',
+  'Otro',
+]
+
+export function NewJobOfferForm({ projects }: { projects: Project[] }) {
+  const router = useRouter()
+  const [loading, setLoading] = useState(false)
+
+  const { register, handleSubmit, watch, formState: { errors } } = useForm<FormData>({
+    resolver: zodResolver(Schema) as Resolver<FormData>,
+    defaultValues: { is_paid: true, is_barter: false, rate_currency: 'EUR' },
+  })
+
+  const isPaid   = watch('is_paid')
+  const isBarter = watch('is_barter')
+
+  async function onSubmit(data: FormData) {
+    setLoading(true)
+    const res = await fetch('/api/job-offers', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({
+        ...data,
+        estimated_rate:     data.estimated_rate     ?? null,
+        rate_unit:          data.rate_unit           ?? null,
+        barter_description: data.barter_description ?? null,
+        max_applicants:     data.max_applicants      ?? null,
+        required_date:      data.required_date       || null,
+        location:           data.location            || null,
+      }),
+    })
+    const result = await res.json()
+    if (!res.ok) {
+      toast.error(result.error ?? 'Error al crear la oferta')
+      setLoading(false)
+      return
+    }
+    toast.success('Oferta publicada')
+    router.push('/bolsa-de-trabajo')
+    router.refresh()
+  }
+
+  const baseInput = 'flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring'
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <div className="grid gap-4 sm:grid-cols-2">
+
+        {/* Proyecto */}
+        <div className="space-y-1.5">
+          <label htmlFor="project_id" className="text-sm font-medium">
+            Proyecto <span className="text-destructive">*</span>
+          </label>
+          <select id="project_id" {...register('project_id')} className={baseInput}>
+            <option value="">Selecciona un proyecto…</option>
+            {projects.map((p) => (
+              <option key={p.id} value={p.id}>{p.title}</option>
+            ))}
+          </select>
+          {errors.project_id && <p className="text-xs text-destructive">{errors.project_id.message}</p>}
+        </div>
+
+        {/* Especialidad */}
+        <div className="space-y-1.5">
+          <label htmlFor="speciality" className="text-sm font-medium">
+            Especialidad <span className="text-destructive">*</span>
+          </label>
+          <select id="speciality" {...register('speciality')} className={baseInput}>
+            <option value="">Selecciona especialidad…</option>
+            {SPECIALITIES.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+          {errors.speciality && <p className="text-xs text-destructive">{errors.speciality.message}</p>}
+        </div>
+
+        {/* Título */}
+        <div className="sm:col-span-2 space-y-1.5">
+          <label htmlFor="title" className="text-sm font-medium">
+            Título de la oferta <span className="text-destructive">*</span>
+          </label>
+          <input
+            id="title"
+            type="text"
+            placeholder="Ej: Técnico de sonido directo — rodaje 3 días"
+            {...register('title')}
+            className={baseInput}
+          />
+          {errors.title && <p className="text-xs text-destructive">{errors.title.message}</p>}
+        </div>
+
+        {/* Descripción */}
+        <div className="sm:col-span-2 space-y-1.5">
+          <label htmlFor="description" className="text-sm font-medium">
+            Descripción <span className="text-destructive">*</span>
+          </label>
+          <textarea
+            id="description"
+            rows={4}
+            placeholder="Describe el trabajo, requisitos, contexto del proyecto…"
+            {...register('description')}
+            className="flex w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none"
+          />
+          {errors.description && <p className="text-xs text-destructive">{errors.description.message}</p>}
+        </div>
+
+        {/* Compensación */}
+        <div className="sm:col-span-2 space-y-3">
+          <p className="text-sm font-medium">Compensación</p>
+          <div className="flex flex-wrap gap-4">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" {...register('is_paid')} className="size-4 rounded border" />
+              <span className="text-sm">Remunerado</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" {...register('is_barter')} className="size-4 rounded border" />
+              <span className="text-sm">Canje / colaboración</span>
+            </label>
+          </div>
+        </div>
+
+        {isPaid && (
+          <>
+            <div className="space-y-1.5">
+              <label htmlFor="estimated_rate" className="text-sm font-medium">Tarifa estimada</label>
+              <input
+                id="estimated_rate"
+                type="number"
+                min={0}
+                placeholder="Ej: 250"
+                {...register('estimated_rate')}
+                className={baseInput}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label htmlFor="rate_unit" className="text-sm font-medium">Unidad</label>
+              <select id="rate_unit" {...register('rate_unit')} className={baseInput}>
+                <option value="">Selecciona…</option>
+                <option value="hour">Por hora</option>
+                <option value="day">Por día</option>
+                <option value="session">Por sesión</option>
+                <option value="project">Por proyecto</option>
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <label htmlFor="rate_currency" className="text-sm font-medium">Moneda</label>
+              <select id="rate_currency" {...register('rate_currency')} className={baseInput}>
+                <option value="EUR">EUR — Euro</option>
+                <option value="USD">USD — Dólar</option>
+                <option value="GBP">GBP — Libra esterlina</option>
+                <option value="CHF">CHF — Franco suizo</option>
+                <option value="ARS">ARS — Peso argentino</option>
+                <option value="MXN">MXN — Peso mexicano</option>
+                <option value="COP">COP — Peso colombiano</option>
+                <option value="CLP">CLP — Peso chileno</option>
+                <option value="BRL">BRL — Real brasileño</option>
+              </select>
+            </div>
+          </>
+        )}
+
+        {isBarter && (
+          <div className="sm:col-span-2 space-y-1.5">
+            <label htmlFor="barter_description" className="text-sm font-medium">Descripción del canje</label>
+            <input
+              id="barter_description"
+              type="text"
+              placeholder="Ej: Material de archivo, crédito en producción, materiales…"
+              {...register('barter_description')}
+              className={baseInput}
+            />
+          </div>
+        )}
+
+        {/* Detalles adicionales */}
+        <div className="space-y-1.5">
+          <label htmlFor="required_date" className="text-sm font-medium">Fecha requerida</label>
+          <input id="required_date" type="date" {...register('required_date')} className={baseInput} />
+        </div>
+
+        <div className="space-y-1.5">
+          <label htmlFor="max_applicants" className="text-sm font-medium">Máx. postulantes</label>
+          <input
+            id="max_applicants"
+            type="number"
+            min={1}
+            placeholder="Sin límite"
+            {...register('max_applicants')}
+            className={baseInput}
+          />
+        </div>
+
+        <div className="sm:col-span-2 space-y-1.5">
+          <label htmlFor="location" className="text-sm font-medium">Ubicación</label>
+          <input
+            id="location"
+            type="text"
+            placeholder="Ej: Barcelona, Estudio Rec 22 / Remoto"
+            {...register('location')}
+            className={baseInput}
+          />
+        </div>
+
+      </div>
+
+      <div className="flex justify-end gap-3">
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="inline-flex h-9 items-center rounded-md border px-4 text-sm font-medium transition-colors hover:bg-accent"
+        >
+          Cancelar
+        </button>
+        <button
+          type="submit"
+          disabled={loading}
+          className="inline-flex h-9 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 disabled:opacity-50"
+        >
+          {loading && <Loader2 className="mr-2 size-4 animate-spin" />}
+          {loading ? 'Publicando…' : 'Publicar oferta'}
+        </button>
+      </div>
+    </form>
+  )
+}
