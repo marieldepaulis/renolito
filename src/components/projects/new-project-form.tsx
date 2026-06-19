@@ -155,7 +155,7 @@ export function NewProjectForm({ projectTypes, organizationId }: Props) {
           <input
             id="location"
             type="text"
-            placeholder="Ciudad, estudio, etc."
+            placeholder="Ej: Barcelona, Estudio Rec 22"
             {...register('location')}
             className="flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           />

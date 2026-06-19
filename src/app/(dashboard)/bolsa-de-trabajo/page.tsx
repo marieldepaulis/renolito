@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { Briefcase, Plus } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
-import { formatDate } from '@/lib/utils'
+import { formatDate, formatCurrency } from '@/lib/utils'
 
 export const metadata: Metadata = { title: 'Bolsa de trabajo' }
 
@@ -101,7 +101,7 @@ export default async function BolsaDeTrabajoPage() {
                     {offer.is_barter
                       ? `Canje: ${offer.barter_description ?? 'Ver detalles'}`
                       : offer.is_paid && offer.compensation_amount
-                        ? `$${offer.compensation_amount.toLocaleString('es-AR')}`
+                        ? formatCurrency(offer.compensation_amount, offer.rate_currency ?? 'EUR')
                         : 'Sin remuneración'}
                   </p>
                   {offer.expires_at && (
@@ -151,7 +151,7 @@ export default async function BolsaDeTrabajoPage() {
                     {offer.is_barter
                       ? `Canje: ${offer.barter_description ?? 'Ver detalles'}`
                       : offer.is_paid && offer.compensation_amount
-                        ? `$${offer.compensation_amount.toLocaleString('es-AR')}`
+                        ? formatCurrency(offer.compensation_amount, offer.rate_currency ?? 'EUR')
                         : 'Sin remuneración'}
                   </p>
                   <p className="text-xs text-muted-foreground">

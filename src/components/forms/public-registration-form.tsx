@@ -339,7 +339,7 @@ export function PublicRegistrationForm({ token, fields, sessions }: Props) {
             id="phone"
             type="tel"
             autoComplete="tel"
-            placeholder="+54 9 11 1234 5678"
+            placeholder="+34 600 123 456"
             {...register('phone')}
             className="flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           />
@@ -355,7 +355,7 @@ export function PublicRegistrationForm({ token, fields, sessions }: Props) {
           <input
             id="city"
             type="text"
-            placeholder="Buenos Aires"
+            placeholder="Barcelona"
             {...register('city')}
             className="flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           />
@@ -380,7 +380,7 @@ export function PublicRegistrationForm({ token, fields, sessions }: Props) {
             {sessions.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.title} —{' '}
-                {new Date(s.scheduled_date).toLocaleDateString('es-AR', {
+                {new Date(s.scheduled_date).toLocaleDateString('es-ES', {
                   weekday: 'short', day: '2-digit', month: 'short',
                 })}
                 {s.start_time ? ` ${s.start_time.slice(0, 5)}` : ''}

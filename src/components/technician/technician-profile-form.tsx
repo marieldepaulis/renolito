@@ -69,7 +69,7 @@ export function TechnicianProfileForm({ userId, existingProfile, specialties, my
       bio:                existingProfile?.bio                ?? '',
       hourly_rate:        existingProfile?.hourly_rate        ?? undefined,
       day_rate:           existingProfile?.day_rate           ?? undefined,
-      currency:           existingProfile?.currency           ?? 'ARS',
+      currency:           existingProfile?.currency           ?? 'EUR',
       is_available:       existingProfile?.is_available       ?? true,
       availability_notes: existingProfile?.availability_notes ?? '',
       website_url:        existingProfile?.website_url        ?? '',
@@ -94,7 +94,7 @@ export function TechnicianProfileForm({ userId, existingProfile, specialties, my
       bio:                data.bio            || null,
       hourly_rate:        data.hourly_rate    ?? null,
       day_rate:           data.day_rate       ?? null,
-      currency:           data.currency       || 'ARS',
+      currency:           data.currency       || 'EUR',
       is_available:       data.is_available,
       availability_notes: data.availability_notes || null,
       website_url:        data.website_url    || null,
@@ -170,7 +170,7 @@ export function TechnicianProfileForm({ userId, existingProfile, specialties, my
         <input
           id="location"
           type="text"
-          placeholder="Buenos Aires, Argentina"
+          placeholder="Barcelona, España"
           {...register('location')}
           className={baseInput}
         />
@@ -190,22 +190,20 @@ export function TechnicianProfileForm({ userId, existingProfile, specialties, my
       {/* Rates */}
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="space-y-1.5">
-          <label htmlFor="hourly_rate" className="text-sm font-medium">Tarifa/hora</label>
-          <input id="hourly_rate" type="number" min={0} placeholder="0" {...register('hourly_rate')} className={baseInput} />
+          <label htmlFor="hourly_rate" className="text-sm font-medium">Tarifa/hora (€)</label>
+          <input id="hourly_rate" type="number" min={0} placeholder="Ej: 35" {...register('hourly_rate')} className={baseInput} />
         </div>
         <div className="space-y-1.5">
-          <label htmlFor="day_rate" className="text-sm font-medium">Tarifa/día</label>
-          <input id="day_rate" type="number" min={0} placeholder="0" {...register('day_rate')} className={baseInput} />
+          <label htmlFor="day_rate" className="text-sm font-medium">Tarifa/día (€)</label>
+          <input id="day_rate" type="number" min={0} placeholder="Ej: 250" {...register('day_rate')} className={baseInput} />
         </div>
         <div className="space-y-1.5">
           <label htmlFor="currency" className="text-sm font-medium">Moneda</label>
           <select id="currency" {...register('currency')} className={baseInput}>
-            <option value="ARS">ARS</option>
-            <option value="USD">USD</option>
-            <option value="EUR">EUR</option>
-            <option value="CLP">CLP</option>
-            <option value="COP">COP</option>
-            <option value="MXN">MXN</option>
+            <option value="EUR">EUR — Euro</option>
+            <option value="USD">USD — Dólar</option>
+            <option value="GBP">GBP — Libra</option>
+            <option value="CHF">CHF — Franco suizo</option>
           </select>
         </div>
       </div>
