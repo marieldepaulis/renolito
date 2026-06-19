@@ -2,18 +2,20 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { FolderOpen, Users, Briefcase, TrendingUp, Plus, ArrowRight } from 'lucide-react'
+import { FolderOpen, Users, Briefcase, Plus, ArrowRight } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
+import { getTranslations } from 'next-intl/server'
 
 export const metadata: Metadata = { title: 'Dashboard' }
 
 export default async function DashboardPage() {
   const supabase = await createClient()
+  const t        = await getTranslations('Dashboard')
+  const tStatus  = await getTranslations('Status')
 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  // Get organization
   const { data: membership } = await supabase
     .from('organization_members')
     .select('organization_id, role, organizations(id, name)')
@@ -22,15 +24,11 @@ export default async function DashboardPage() {
     .limit(1)
     .maybeSingle()
 
-  if (!membership) {
-    // User is authenticated but has no organization yet → redirect to setup
-    redirect('/onboarding')
-  }
+  if (!membership) redirect('/onboarding')
 
-  const orgId  = membership.organization_id
+  const orgId   = membership.organization_id
   const orgName = (membership.organizations as unknown as { name: string } | null)?.name ?? ''
 
-  // Parallel data fetching
   const [projectsRes, pendingArtistsRes, pendingTechRes, recentActivityRes] =
     await Promise.all([
       supabase
@@ -57,26 +55,26 @@ export default async function DashboardPage() {
         .limit(6),
     ])
 
-  const projects      = projectsRes.data ?? []
+  const projects       = projectsRes.data ?? []
   const pendingArtists = pendingArtistsRes.count ?? 0
   const pendingTech    = pendingTechRes.count ?? 0
   const activity       = recentActivityRes.data ?? []
 
   const stats = [
     {
-      label: 'Proyectos activos',
+      label: t('activeProjects'),
       value: projects.filter((p) => p.status === 'active').length,
       icon:  FolderOpen,
       href:  '/projects',
     },
     {
-      label: 'Artistas pendientes',
+      label: t('pendingArtists'),
       value: pendingArtists,
       icon:  Users,
       href:  '/projects',
     },
     {
-      label: 'Staff pendiente',
+      label: t('pendingStaff'),
       value: pendingTech,
       icon:  Briefcase,
       href:  '/bolsa-de-trabajo',
@@ -84,10 +82,10 @@ export default async function DashboardPage() {
   ]
 
   const statusLabel: Record<string, string> = {
-    draft:     'Borrador',
-    active:    'Activo',
-    completed: 'Completado',
-    archived:  'Archivado',
+    draft:     tStatus('draft'),
+    active:    tStatus('active'),
+    completed: tStatus('completed'),
+    archived:  tStatus('archived'),
   }
 
   const statusColor: Record<string, string> = {
@@ -99,24 +97,20 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
-          <p className="text-sm text-muted-foreground">
-            {orgName}
-          </p>
+          <h1 className="text-2xl font-semibold tracking-tight">{t('title')}</h1>
+          <p className="text-sm text-muted-foreground">{orgName}</p>
         </div>
         <Link
           href="/projects/new"
           className="inline-flex items-center gap-2 rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background hover:bg-foreground/90"
         >
           <Plus className="size-4" />
-          Nuevo proyecto
+          {t('newProject')}
         </Link>
       </div>
 
-      {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-3">
         {stats.map(({ label, value, icon: Icon, href }) => (
           <Link
@@ -139,26 +133,24 @@ export default async function DashboardPage() {
         {/* Recent projects */}
         <div className="rounded-lg border bg-card">
           <div className="flex items-center justify-between border-b px-5 py-4">
-            <h2 className="font-medium">Proyectos recientes</h2>
+            <h2 className="font-medium">{t('recentProjects')}</h2>
             <Link
               href="/projects"
               className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
             >
-              Ver todos <ArrowRight className="size-3" />
+              {t('viewAll')} <ArrowRight className="size-3" />
             </Link>
           </div>
           <div className="divide-y">
             {projects.length === 0 ? (
               <div className="flex flex-col items-center gap-2 py-10 text-center">
                 <FolderOpen className="size-8 text-muted-foreground/50" />
-                <p className="text-sm text-muted-foreground">
-                  Aún no hay proyectos
-                </p>
+                <p className="text-sm text-muted-foreground">{t('noProjects')}</p>
                 <Link
                   href="/projects/new"
                   className="text-sm font-medium text-foreground underline underline-offset-4"
                 >
-                  Crear el primero
+                  {t('createFirst')}
                 </Link>
               </div>
             ) : (
@@ -172,15 +164,11 @@ export default async function DashboardPage() {
                     <p className="text-sm font-medium">{project.title}</p>
                     <p className="text-xs text-muted-foreground">
                       {formatDate(project.created_at, {
-                        day: '2-digit',
-                        month: 'short',
-                        year: 'numeric',
+                        day: '2-digit', month: 'short', year: 'numeric',
                       })}
                     </p>
                   </div>
-                  <span
-                    className={`text-xs font-medium ${statusColor[project.status]}`}
-                  >
+                  <span className={`text-xs font-medium ${statusColor[project.status]}`}>
                     {statusLabel[project.status]}
                   </span>
                 </Link>
@@ -192,19 +180,17 @@ export default async function DashboardPage() {
         {/* Activity log */}
         <div className="rounded-lg border bg-card">
           <div className="border-b px-5 py-4">
-            <h2 className="font-medium">Actividad reciente</h2>
+            <h2 className="font-medium">{t('recentActivity')}</h2>
           </div>
           <div className="divide-y">
             {activity.length === 0 ? (
               <div className="flex items-center justify-center py-10">
-                <p className="text-sm text-muted-foreground">
-                  Sin actividad registrada
-                </p>
+                <p className="text-sm text-muted-foreground">{t('noActivity')}</p>
               </div>
             ) : (
               activity.map((log) => {
                 const actor = (log.profiles as unknown as { full_name: string } | null)
-                  ?.full_name ?? 'Sistema'
+                  ?.full_name ?? t('system')
                 const meta = log.metadata as Record<string, string> | null
                 return (
                   <div key={log.id} className="px-5 py-3.5">
@@ -217,10 +203,7 @@ export default async function DashboardPage() {
                     </p>
                     <p className="mt-0.5 text-xs text-muted-foreground">
                       {formatDate(log.created_at, {
-                        day:    '2-digit',
-                        month:  'short',
-                        hour:   '2-digit',
-                        minute: '2-digit',
+                        day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
                       })}
                     </p>
                   </div>

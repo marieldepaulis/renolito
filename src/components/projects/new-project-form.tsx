@@ -8,6 +8,7 @@ import type { Resolver } from 'react-hook-form'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
 interface ProjectType {
   id:   string
@@ -35,10 +36,11 @@ interface Props {
 }
 
 export function NewProjectForm({ projectTypes, organizationId }: Props) {
-  const router   = useRouter()
+  const t      = useTranslations('NewProject')
+  const router = useRouter()
   const [loading, setLoading] = useState(false)
 
-  const { register, handleSubmit, watch, formState: { errors } } = useForm<FormData>({
+  const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(Schema) as Resolver<FormData>,
     defaultValues: { is_public: true, requires_session_selection: false },
   })
@@ -66,15 +68,17 @@ export function NewProjectForm({ projectTypes, organizationId }: Props) {
     const result = await res.json()
 
     if (!res.ok) {
-      toast.error(result.error ?? 'Error al crear el proyecto')
+      toast.error(result.error ?? t('errorToast'))
       setLoading(false)
       return
     }
 
-    toast.success('Proyecto creado')
+    toast.success(t('successToast'))
     router.push(`/projects/${result.id}`)
     router.refresh()
   }
+
+  const baseInput = 'flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring'
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -82,14 +86,14 @@ export function NewProjectForm({ projectTypes, organizationId }: Props) {
         {/* Title */}
         <div className="sm:col-span-2 space-y-1.5">
           <label htmlFor="title" className="text-sm font-medium">
-            Título del proyecto <span className="text-destructive">*</span>
+            {t('titleField')} <span className="text-destructive">*</span>
           </label>
           <input
             id="title"
             type="text"
-            placeholder="Ej: Álbum Debut 2026"
+            placeholder={t('titlePlaceholder')}
             {...register('title')}
-            className="flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            className={baseInput}
           />
           {errors.title && <p className="text-xs text-destructive">{errors.title.message}</p>}
         </div>
@@ -97,16 +101,16 @@ export function NewProjectForm({ projectTypes, organizationId }: Props) {
         {/* Project type */}
         <div className="sm:col-span-2 space-y-1.5">
           <label htmlFor="project_type_id" className="text-sm font-medium">
-            Tipo de proyecto <span className="text-destructive">*</span>
+            {t('typeField')} <span className="text-destructive">*</span>
           </label>
           <select
             id="project_type_id"
             {...register('project_type_id')}
-            className="flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            className={baseInput}
           >
-            <option value="">Selecciona un tipo…</option>
-            {projectTypes.map((t) => (
-              <option key={t.id} value={t.id}>{t.name}</option>
+            <option value="">{t('typeDefault')}</option>
+            {projectTypes.map((type) => (
+              <option key={type.id} value={type.id}>{type.name}</option>
             ))}
           </select>
           {errors.project_type_id && (
@@ -117,91 +121,66 @@ export function NewProjectForm({ projectTypes, organizationId }: Props) {
         {/* Description */}
         <div className="sm:col-span-2 space-y-1.5">
           <label htmlFor="description" className="text-sm font-medium">
-            Descripción
+            {t('descriptionField')}
           </label>
           <textarea
             id="description"
             rows={3}
-            placeholder="Breve descripción pública del proyecto…"
+            placeholder={t('descriptionPlaceholder')}
             {...register('description')}
             className="flex w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none"
           />
-          {errors.description && <p className="text-xs text-destructive">{errors.description.message}</p>}
         </div>
 
         {/* Dates */}
         <div className="space-y-1.5">
-          <label htmlFor="start_date" className="text-sm font-medium">Fecha de inicio</label>
-          <input
-            id="start_date"
-            type="date"
-            {...register('start_date')}
-            className="flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-          />
+          <label htmlFor="start_date" className="text-sm font-medium">{t('startDate')}</label>
+          <input id="start_date" type="date" {...register('start_date')} className={baseInput} />
         </div>
         <div className="space-y-1.5">
-          <label htmlFor="end_date" className="text-sm font-medium">Fecha de cierre</label>
-          <input
-            id="end_date"
-            type="date"
-            {...register('end_date')}
-            className="flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-          />
+          <label htmlFor="end_date" className="text-sm font-medium">{t('endDate')}</label>
+          <input id="end_date" type="date" {...register('end_date')} className={baseInput} />
         </div>
 
         {/* Location */}
         <div className="space-y-1.5">
-          <label htmlFor="location" className="text-sm font-medium">Ubicación</label>
+          <label htmlFor="location" className="text-sm font-medium">{t('location')}</label>
           <input
             id="location"
             type="text"
-            placeholder="Ej: Barcelona, Estudio Rec 22"
+            placeholder={t('locationPlaceholder')}
             {...register('location')}
-            className="flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            className={baseInput}
           />
         </div>
 
         {/* Max participants */}
         <div className="space-y-1.5">
-          <label htmlFor="max_participants" className="text-sm font-medium">
-            Máx. participantes
-          </label>
+          <label htmlFor="max_participants" className="text-sm font-medium">{t('maxParticipants')}</label>
           <input
             id="max_participants"
             type="number"
             min={1}
-            placeholder="Sin límite"
+            placeholder={t('maxParticipantsPlaceholder')}
             {...register('max_participants')}
-            className="flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            className={baseInput}
           />
         </div>
 
         {/* Toggles */}
         <div className="sm:col-span-2 flex flex-col gap-3">
           <label className="flex items-center gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              {...register('is_public')}
-              className="size-4 rounded border"
-            />
+            <input type="checkbox" {...register('is_public')} className="size-4 rounded border" />
             <div>
-              <p className="text-sm font-medium">Formulario público visible</p>
-              <p className="text-xs text-muted-foreground">
-                El formulario de inscripción estará accesible con el enlace sin necesidad de login
-              </p>
+              <p className="text-sm font-medium">{t('isPublicLabel')}</p>
+              <p className="text-xs text-muted-foreground">{t('isPublicDesc')}</p>
             </div>
           </label>
           <label className="flex items-center gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              {...register('requires_session_selection')}
-              className="size-4 rounded border"
-            />
+            <input type="checkbox" {...register('requires_session_selection')} className="size-4 rounded border" />
             <div>
-              <p className="text-sm font-medium">El postulante elige su sesión</p>
-              <p className="text-xs text-muted-foreground">
-                El formulario mostrará un selector de sesiones disponibles
-              </p>
+              <p className="text-sm font-medium">{t('requiresSessionLabel')}</p>
+              <p className="text-xs text-muted-foreground">{t('requiresSessionDesc')}</p>
             </div>
           </label>
         </div>
@@ -213,7 +192,7 @@ export function NewProjectForm({ projectTypes, organizationId }: Props) {
           onClick={() => router.back()}
           className="inline-flex h-9 items-center rounded-md border px-4 text-sm font-medium transition-colors hover:bg-accent"
         >
-          Cancelar
+          {t('cancel')}
         </button>
         <button
           type="submit"
@@ -221,7 +200,7 @@ export function NewProjectForm({ projectTypes, organizationId }: Props) {
           className="inline-flex h-9 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 disabled:opacity-50"
         >
           {loading && <Loader2 className="mr-2 size-4 animate-spin" />}
-          Crear proyecto
+          {loading ? t('submitting') : t('submit')}
         </button>
       </div>
     </form>

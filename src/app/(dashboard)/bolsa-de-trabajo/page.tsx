@@ -22,7 +22,7 @@ export default async function BolsaDeTrabajoPage() {
   const { data: jobOffers } = await supabase
     .from('job_offers')
     .select(`
-      id, title, description, is_paid, compensation_amount,
+      id, title, description, is_paid, compensation_amount, rate_currency,
       is_barter, barter_description, status, expires_at, created_at,
       projects(title, project_types(name)),
       specialties(name)
@@ -33,7 +33,7 @@ export default async function BolsaDeTrabajoPage() {
   const { data: publicOffers } = await supabase
     .from('job_offers')
     .select(`
-      id, title, description, is_paid, compensation_amount,
+      id, title, description, is_paid, compensation_amount, rate_currency,
       is_barter, barter_description, status, expires_at, created_at,
       organizations(name, city),
       projects(title, project_types(name)),

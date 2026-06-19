@@ -5,10 +5,10 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { useTranslations } from 'next-intl'
 
 const Schema = z.object({
   full_name:        z.string().min(2, 'Nombre demasiado corto').max(150),
@@ -23,10 +23,10 @@ const Schema = z.object({
 type FormData = z.infer<typeof Schema>
 
 export function RegisterForm() {
-  const router   = useRouter()
+  const t        = useTranslations('Auth.register')
   const supabase = createClient()
-  const [loading, setLoading]   = useState(false)
-  const [success, setSuccess]   = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [success, setSuccess] = useState(false)
 
   const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(Schema),
@@ -42,13 +42,11 @@ export function RegisterForm() {
         emailRedirectTo: `${window.location.origin}/api/auth/callback`,
       },
     })
-
     if (error) {
       toast.error(error.message)
       setLoading(false)
       return
     }
-
     setSuccess(true)
     setLoading(false)
   }
@@ -63,8 +61,7 @@ export function RegisterForm() {
         </div>
         <h3 className="font-semibold">Revisa tu email</h3>
         <p className="text-sm text-muted-foreground">
-          Te enviamos un enlace de confirmación. Haz clic en él para activar
-          tu cuenta.
+          Te enviamos un enlace de confirmación. Haz clic en él para activar tu cuenta.
         </p>
       </div>
     )
@@ -73,26 +70,20 @@ export function RegisterForm() {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div className="space-y-1.5">
-        <label htmlFor="full_name" className="text-sm font-medium">
-          Nombre completo
-        </label>
+        <label htmlFor="full_name" className="text-sm font-medium">{t('fullName')}</label>
         <input
           id="full_name"
           type="text"
           autoComplete="name"
-          placeholder="María González"
+          placeholder={t('fullNamePlaceholder')}
           {...register('full_name')}
           className="flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
         />
-        {errors.full_name && (
-          <p className="text-xs text-destructive">{errors.full_name.message}</p>
-        )}
+        {errors.full_name && <p className="text-xs text-destructive">{errors.full_name.message}</p>}
       </div>
 
       <div className="space-y-1.5">
-        <label htmlFor="email" className="text-sm font-medium">
-          Email
-        </label>
+        <label htmlFor="email" className="text-sm font-medium">{t('email')}</label>
         <input
           id="email"
           type="email"
@@ -101,31 +92,25 @@ export function RegisterForm() {
           {...register('email')}
           className="flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
         />
-        {errors.email && (
-          <p className="text-xs text-destructive">{errors.email.message}</p>
-        )}
+        {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
       </div>
 
       <div className="space-y-1.5">
-        <label htmlFor="password" className="text-sm font-medium">
-          Contraseña
-        </label>
+        <label htmlFor="password" className="text-sm font-medium">{t('password')}</label>
         <input
           id="password"
           type="password"
           autoComplete="new-password"
-          placeholder="Mínimo 8 caracteres"
+          placeholder={t('passwordPlaceholder')}
           {...register('password')}
           className="flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
         />
-        {errors.password && (
-          <p className="text-xs text-destructive">{errors.password.message}</p>
-        )}
+        {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
       </div>
 
       <div className="space-y-1.5">
         <label htmlFor="confirm_password" className="text-sm font-medium">
-          Confirmar contraseña
+          {t('password')} ×2
         </label>
         <input
           id="confirm_password"
@@ -134,9 +119,7 @@ export function RegisterForm() {
           {...register('confirm_password')}
           className="flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
         />
-        {errors.confirm_password && (
-          <p className="text-xs text-destructive">{errors.confirm_password.message}</p>
-        )}
+        {errors.confirm_password && <p className="text-xs text-destructive">{errors.confirm_password.message}</p>}
       </div>
 
       <button
@@ -145,13 +128,13 @@ export function RegisterForm() {
         className="inline-flex h-9 w-full items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 disabled:opacity-50"
       >
         {loading && <Loader2 className="mr-2 size-4 animate-spin" />}
-        Crear cuenta gratis
+        {loading ? t('submitting') : t('submit')}
       </button>
 
       <p className="text-center text-sm text-muted-foreground">
-        ¿Ya tienes cuenta?{' '}
+        {t('hasAccount')}{' '}
         <Link href="/login" className="font-medium text-foreground underline-offset-4 hover:underline">
-          Inicia sesión
+          {t('login')}
         </Link>
       </p>
     </form>

@@ -10,6 +10,8 @@ import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
+import { LanguageToggle } from '@/components/ui/language-toggle'
 import type { OrgMemberRole } from '@/types/database'
 
 interface SidebarProps {
@@ -27,21 +29,22 @@ interface SidebarProps {
   role: OrgMemberRole | null
 }
 
-const NAV_ITEMS = [
-  { label: 'Dashboard',     href: '/dashboard',        icon: LayoutDashboard },
-  { label: 'Proyectos',     href: '/projects',          icon: FolderOpen },
-  { label: 'Bolsa trabajo', href: '/bolsa-de-trabajo',  icon: Briefcase },
-]
-
-const BOTTOM_ITEMS = [
-  { label: 'Configuración', href: '/configuracion', icon: Settings },
-]
-
 export function DashboardSidebar({ user, organization, role }: SidebarProps) {
-  const pathname   = usePathname()
-  const router     = useRouter()
-  const supabase   = createClient()
+  const t        = useTranslations('Nav')
+  const pathname = usePathname()
+  const router   = useRouter()
+  const supabase = createClient()
   const [open, setOpen] = useState(false)
+
+  const NAV_ITEMS = [
+    { label: t('dashboard'),   href: '/dashboard',       icon: LayoutDashboard },
+    { label: t('projects'),    href: '/projects',         icon: FolderOpen },
+    { label: t('jobBoard'),    href: '/bolsa-de-trabajo', icon: Briefcase },
+  ]
+
+  const BOTTOM_ITEMS = [
+    { label: t('settings'), href: '/configuracion', icon: Settings },
+  ]
 
   async function handleSignOut() {
     await supabase.auth.signOut()
@@ -86,7 +89,6 @@ export function DashboardSidebar({ user, organization, role }: SidebarProps) {
 
         <div className="my-2 border-t" />
 
-        {/* Technician profile link (available to all users) */}
         <Link
           href="/mi-perfil-tecnico"
           className={cn(
@@ -97,7 +99,7 @@ export function DashboardSidebar({ user, organization, role }: SidebarProps) {
           )}
         >
           <User className="size-4 shrink-0" />
-          Mi perfil técnico
+          {t('myTechProfile')}
         </Link>
       </nav>
 
@@ -113,6 +115,9 @@ export function DashboardSidebar({ user, organization, role }: SidebarProps) {
             {label}
           </Link>
         ))}
+
+        {/* Language toggle */}
+        <LanguageToggle />
 
         {/* User menu */}
         <div className="relative mt-1">
@@ -139,7 +144,7 @@ export function DashboardSidebar({ user, organization, role }: SidebarProps) {
                 className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent"
               >
                 <User className="size-4" />
-                Mi perfil
+                {t('myProfile')}
               </Link>
               <button
                 type="button"
@@ -147,7 +152,7 @@ export function DashboardSidebar({ user, organization, role }: SidebarProps) {
                 className="flex w-full items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-accent"
               >
                 <LogOut className="size-4" />
-                Cerrar sesión
+                {t('signOut')}
               </button>
             </div>
           )}

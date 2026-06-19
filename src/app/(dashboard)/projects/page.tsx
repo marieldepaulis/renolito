@@ -4,15 +4,9 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { Plus, FolderOpen, ExternalLink } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
+import { getTranslations } from 'next-intl/server'
 
 export const metadata: Metadata = { title: 'Proyectos' }
-
-const STATUS_LABEL: Record<string, string> = {
-  draft:     'Borrador',
-  active:    'Activo',
-  completed: 'Completado',
-  archived:  'Archivado',
-}
 
 const STATUS_CLASS: Record<string, string> = {
   draft:     'bg-zinc-100 text-zinc-600',
@@ -23,6 +17,9 @@ const STATUS_CLASS: Record<string, string> = {
 
 export default async function ProjectsPage() {
   const supabase = await createClient()
+  const t        = await getTranslations('Projects')
+  const tStatus  = await getTranslations('Status')
+
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
@@ -46,13 +43,20 @@ export default async function ProjectsPage() {
     .eq('organization_id', membership.organization_id)
     .order('updated_at', { ascending: false })
 
+  const statusLabel: Record<string, string> = {
+    draft:     tStatus('draft'),
+    active:    tStatus('active'),
+    completed: tStatus('completed'),
+    archived:  tStatus('archived'),
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Proyectos</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{t('title')}</h1>
           <p className="text-sm text-muted-foreground">
-            {projects?.length ?? 0} proyectos en tu workspace
+            {t('workspaceCount', { count: projects?.length ?? 0 })}
           </p>
         </div>
         <Link
@@ -60,7 +64,7 @@ export default async function ProjectsPage() {
           className="inline-flex items-center gap-2 rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background hover:bg-foreground/90"
         >
           <Plus className="size-4" />
-          Nuevo proyecto
+          {t('newProject')}
         </Link>
       </div>
 
@@ -68,17 +72,15 @@ export default async function ProjectsPage() {
         <div className="flex flex-col items-center gap-4 rounded-lg border border-dashed py-20 text-center">
           <FolderOpen className="size-10 text-muted-foreground/40" />
           <div>
-            <p className="font-medium">Sin proyectos todavía</p>
-            <p className="text-sm text-muted-foreground">
-              Crea tu primer proyecto y genera el link de inscripción
-            </p>
+            <p className="font-medium">{t('noProjectsTitle')}</p>
+            <p className="text-sm text-muted-foreground">{t('noProjectsDesc')}</p>
           </div>
           <Link
             href="/projects/new"
             className="inline-flex items-center gap-2 rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background hover:bg-foreground/90"
           >
             <Plus className="size-4" />
-            Crear proyecto
+            {t('createProject')}
           </Link>
         </div>
       ) : (
@@ -86,25 +88,19 @@ export default async function ProjectsPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b text-left text-xs text-muted-foreground">
-                <th className="px-5 py-3 font-medium">Proyecto</th>
-                <th className="px-5 py-3 font-medium">Tipo</th>
-                <th className="px-5 py-3 font-medium">Estado</th>
-                <th className="px-5 py-3 font-medium">Inscripción</th>
-                <th className="px-5 py-3 font-medium">Actualizado</th>
-                <th className="px-5 py-3 font-medium">Link público</th>
+                <th className="px-5 py-3 font-medium">{t('colProject')}</th>
+                <th className="px-5 py-3 font-medium">{t('colType')}</th>
+                <th className="px-5 py-3 font-medium">{t('colStatus')}</th>
+                <th className="px-5 py-3 font-medium">{t('colRegistration')}</th>
+                <th className="px-5 py-3 font-medium">{t('colUpdated')}</th>
+                <th className="px-5 py-3 font-medium">{t('colPublicLink')}</th>
               </tr>
             </thead>
             <tbody className="divide-y">
               {projects.map((project) => (
-                <tr
-                  key={project.id}
-                  className="transition-colors hover:bg-accent"
-                >
+                <tr key={project.id} className="transition-colors hover:bg-accent">
                   <td className="px-5 py-3.5">
-                    <Link
-                      href={`/projects/${project.id}`}
-                      className="font-medium hover:underline"
-                    >
+                    <Link href={`/projects/${project.id}`} className="font-medium hover:underline">
                       {project.title}
                     </Link>
                   </td>
@@ -112,23 +108,17 @@ export default async function ProjectsPage() {
                     {(project.project_types as unknown as { name: string } | null)?.name ?? '—'}
                   </td>
                   <td className="px-5 py-3.5">
-                    <span
-                      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_CLASS[project.status]}`}
-                    >
-                      {STATUS_LABEL[project.status]}
+                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_CLASS[project.status]}`}>
+                      {statusLabel[project.status]}
                     </span>
                   </td>
                   <td className="px-5 py-3.5">
-                    <span
-                      className={`text-xs ${project.registration_open ? 'text-emerald-600' : 'text-muted-foreground'}`}
-                    >
-                      {project.registration_open ? 'Abierta' : 'Cerrada'}
+                    <span className={`text-xs ${project.registration_open ? 'text-emerald-600' : 'text-muted-foreground'}`}>
+                      {project.registration_open ? tStatus('open') : tStatus('closed')}
                     </span>
                   </td>
                   <td className="px-5 py-3.5 text-muted-foreground">
-                    {formatDate(project.updated_at, {
-                      day: '2-digit', month: 'short', year: 'numeric',
-                    })}
+                    {formatDate(project.updated_at, { day: '2-digit', month: 'short', year: 'numeric' })}
                   </td>
                   <td className="px-5 py-3.5">
                     <Link
@@ -137,7 +127,7 @@ export default async function ProjectsPage() {
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
                     >
-                      Ver form <ExternalLink className="size-3" />
+                      {t('viewForm')} <ExternalLink className="size-3" />
                     </Link>
                   </td>
                 </tr>
