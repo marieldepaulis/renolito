@@ -3,27 +3,14 @@ import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { Plus, FileText, ExternalLink, Download } from 'lucide-react'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { Plus } from 'lucide-react'
 import { JobOfferCard } from '@/components/projects/job-offer-card'
+import { ApplicationCard } from '@/components/staff/application-card'
 
 export const metadata: Metadata = { title: 'Staff técnico' }
 
 interface Props {
   params: Promise<{ projectId: string }>
-}
-
-const STATUS_BADGE: Record<string, string> = {
-  pending:   'bg-zinc-100 text-zinc-600',
-  reviewing: 'bg-blue-100 text-blue-700',
-  accepted:  'bg-emerald-100 text-emerald-700',
-  rejected:  'bg-red-100 text-red-700',
-}
-const STATUS_LABEL: Record<string, string> = {
-  pending:   'Pendiente',
-  reviewing: 'En revisión',
-  accepted:  'Aceptado',
-  rejected:  'Rechazado',
 }
 
 export default async function StaffPage({ params }: Props) {
@@ -128,57 +115,10 @@ export default async function StaffPage({ params }: Props) {
                 {apps.length > 0 && (
                   <div className="ml-2 space-y-2">
                     <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      {apps.length} postulación{apps.length !== 1 ? 'es' : ''} recibida{apps.length !== 1 ? 's' : ''}
+                      {apps.length} postulación{apps.length !== 1 ? 'es' : ''} recibida{apps.length !== 1 ? 's' : ''} · clic para expandir
                     </p>
                     <div className="space-y-2">
-                      {apps.map(app => (
-                        <div key={app.id} className="rounded-lg border bg-card p-4 space-y-2">
-                          <div className="flex items-start justify-between gap-3 flex-wrap">
-                            <div>
-                              <p className="font-medium text-sm">{app.full_name}</p>
-                              <a href={`mailto:${app.email}`} className="text-xs text-muted-foreground hover:text-foreground hover:underline">
-                                {app.email}
-                              </a>
-                            </div>
-                            <div className="flex items-center gap-2 shrink-0">
-                              <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_BADGE[app.status] ?? STATUS_BADGE.pending}`}>
-                                {STATUS_LABEL[app.status] ?? 'Pendiente'}
-                              </span>
-                              <span className="text-xs text-muted-foreground">
-                                {formatDate(app.created_at, { day: '2-digit', month: 'short' })}
-                              </span>
-                            </div>
-                          </div>
-
-                          {app.proposed_rate && (
-                            <p className="text-xs text-muted-foreground">
-                              Tarifa propuesta: <span className="font-medium text-foreground">{formatCurrency(app.proposed_rate, 'ARS')}</span>
-                            </p>
-                          )}
-
-                          {app.cover_note && (
-                            <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3 whitespace-pre-wrap">
-                              {app.cover_note}
-                            </p>
-                          )}
-
-                          <div className="flex flex-wrap gap-2 pt-1">
-                            {app.portfolio_url && (
-                              <a href={app.portfolio_url} target="_blank" rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-xs font-medium hover:bg-accent transition-colors">
-                                <ExternalLink className="size-3" /> Portfolio
-                              </a>
-                            )}
-                            {app.cv_url && (
-                              <a href={app.cv_url} target="_blank" rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-xs font-medium hover:bg-accent transition-colors">
-                                <Download className="size-3" /> Descargar CV
-                              </a>
-                            )}
-                            <ApplicationStatusChanger appId={app.id} currentStatus={app.status} />
-                          </div>
-                        </div>
-                      ))}
+                      {apps.map(app => <ApplicationCard key={app.id} app={app} />)}
                     </div>
                   </div>
                 )}
@@ -192,32 +132,5 @@ export default async function StaffPage({ params }: Props) {
         </div>
       )}
     </div>
-  )
-}
-
-// Inline server-safe status badge — change status via API
-function ApplicationStatusChanger({ appId, currentStatus }: { appId: string; currentStatus: string }) {
-  // Rendered as a client island via a small form — using native form for simplicity
-  const nextStatuses = [
-    { value: 'reviewing', label: 'Marcar en revisión' },
-    { value: 'accepted',  label: 'Aceptar' },
-    { value: 'rejected',  label: 'Rechazar' },
-  ].filter(s => s.value !== currentStatus)
-
-  if (nextStatuses.length === 0) return null
-
-  return (
-    <form action={`/api/staff/applications/${appId}`} method="POST" className="flex flex-wrap gap-1">
-      {nextStatuses.map(s => (
-        <button key={s.value} type="submit" name="status" value={s.value}
-          formMethod="POST"
-          className={`rounded-md px-2.5 py-1 text-xs font-medium border transition-colors hover:bg-accent ${
-            s.value === 'accepted' ? 'border-emerald-200 text-emerald-700 hover:bg-emerald-50' :
-            s.value === 'rejected' ? 'border-red-200 text-red-600 hover:bg-red-50' : ''
-          }`}>
-          {s.label}
-        </button>
-      ))}
-    </form>
   )
 }
