@@ -132,6 +132,7 @@ export default async function BolsaDeTrabajoPage() {
                   status:             offer.status,
                   required_date:      offer.required_date,
                   staffLink:          staffLink(offer.projects),
+                  projectId:          offer.projects?.id ?? null,
                 }}
               />
             ))}

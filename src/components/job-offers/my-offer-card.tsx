@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { Pencil, Trash2, Loader2, X, ExternalLink } from 'lucide-react'
+import { Pencil, Trash2, Loader2, X, ExternalLink, Users } from 'lucide-react'
 import Link from 'next/link'
 import { formatCurrency, formatDate } from '@/lib/utils'
 
@@ -21,6 +21,7 @@ interface Offer {
   status: string
   required_date: string | null
   staffLink: string | null
+  projectId: string | null
 }
 
 const inputCls = 'flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring'
@@ -113,14 +114,22 @@ export function MyOfferCard({ offer: initial }: { offer: Offer }) {
           </p>
         )}
 
-        {initial.staffLink && initial.status === 'open' && (
-          <div className="border-t pt-2">
+        <div className="border-t pt-2 flex flex-wrap items-center gap-3">
+          {initial.projectId && (
+            <Link
+              href={`/projects/${initial.projectId}/staff`}
+              className="inline-flex items-center gap-1 text-xs font-medium text-foreground hover:underline"
+            >
+              <Users className="size-3" /> Ver postulaciones
+            </Link>
+          )}
+          {initial.staffLink && initial.status === 'open' && (
             <Link href={initial.staffLink} target="_blank"
-              className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
+              className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:underline">
               <ExternalLink className="size-3" /> Link para técnicos
             </Link>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Edit modal */}
