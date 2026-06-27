@@ -36,7 +36,7 @@ export default async function ProjectsPage() {
   const { data: projects } = await supabase
     .from('projects')
     .select(`
-      id, title, status, registration_open, registration_link_token,
+      id, title, status, registration_open, registration_link_token, slug,
       created_at, updated_at,
       project_types(name, icon)
     `)
@@ -100,7 +100,7 @@ export default async function ProjectsPage() {
               {projects.map((project) => (
                 <tr key={project.id} className="transition-colors hover:bg-accent">
                   <td className="px-5 py-3.5">
-                    <Link href={`/projects/${project.id}`} className="font-medium hover:underline">
+                    <Link href={`/projects/${(project as unknown as { slug?: string }).slug ?? project.id}`} className="font-medium hover:underline">
                       {project.title}
                     </Link>
                   </td>

@@ -33,7 +33,7 @@ export default async function DashboardPage() {
     await Promise.all([
       supabase
         .from('projects')
-        .select('id, title, status, registration_open, created_at')
+        .select('id, title, status, registration_open, created_at, slug')
         .eq('organization_id', orgId)
         .order('created_at', { ascending: false })
         .limit(5),
@@ -157,7 +157,7 @@ export default async function DashboardPage() {
               projects.map((project) => (
                 <Link
                   key={project.id}
-                  href={`/projects/${project.id}`}
+                  href={`/projects/${(project as unknown as { slug?: string }).slug ?? project.id}`}
                   className="flex items-center justify-between px-5 py-3.5 transition-colors hover:bg-accent"
                 >
                   <div>

@@ -19,10 +19,12 @@ export default async function StaffPage({ params }: Props) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  const col = UUID_RE.test(projectId) ? 'id' : 'slug'
   const { data: project } = await supabase
     .from('projects')
     .select('id, title')
-    .eq('id', projectId)
+    .eq(col, projectId)
     .single()
 
   if (!project) notFound()
@@ -39,7 +41,7 @@ export default async function StaffPage({ params }: Props) {
         )
       )
     `)
-    .eq('project_id', projectId)
+    .eq('project_id', project.id)
     .order('created_at', { ascending: false })
 
   // Fetch public staff applications for all offers in this project

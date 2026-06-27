@@ -27,45 +27,34 @@ export default async function ProjectDetailPage({ params }: Props) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  // Try fetching slug (available after migration 002); fall back if column doesn't exist
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  const selectFields = `id, title, description, status, registration_open,
+    registration_link_token, slug, hide_status_from_applicants,
+    created_at, updated_at, project_types(name, icon)`
+
   let project: unknown = null
   {
-    const { data, error } = await supabase
-      .from('projects')
-      .select(`id, title, description, status, registration_open,
-        registration_link_token, slug, hide_status_from_applicants,
-        created_at, updated_at, project_types(name, icon)`)
-      .eq('id', projectId).single()
-
-    if (error?.message?.includes('slug')) {
-      // Slug column not yet added — fetch without it
-      const { data: d2 } = await supabase
-        .from('projects')
-        .select(`id, title, description, status, registration_open,
-          registration_link_token, hide_status_from_applicants,
-          created_at, updated_at, project_types(name, icon)`)
-        .eq('id', projectId).single()
-      project = d2
-    } else {
-      project = data
-    }
+    const col = UUID_RE.test(projectId) ? 'id' : 'slug'
+    const { data } = await supabase.from('projects').select(selectFields).eq(col, projectId).single()
+    project = data
   }
 
   if (!project) notFound()
 
+  const resolvedId = (project as unknown as { id: string }).id
   const [artistCount, techCount, sessionCount] = await Promise.all([
     supabase
       .from('artist_applications')
       .select('id', { count: 'exact', head: true })
-      .eq('project_id', projectId),
+      .eq('project_id', resolvedId),
     supabase
       .from('job_offers')
       .select('id', { count: 'exact', head: true })
-      .eq('project_id', projectId),
+      .eq('project_id', resolvedId),
     supabase
       .from('sessions')
       .select('id', { count: 'exact', head: true })
-      .eq('project_id', projectId),
+      .eq('project_id', resolvedId),
   ])
 
   const p = project as unknown as {
