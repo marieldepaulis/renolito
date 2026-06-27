@@ -5,7 +5,7 @@ import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, FolderOpen, Briefcase,
-  Settings, LogOut, Music, User, ChevronDown, Users2,
+  Settings, LogOut, Music, User, ChevronDown, Users2, X, ClipboardList,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
@@ -27,10 +27,11 @@ interface SidebarProps {
     slug:     string
     logo_url: string | null
   } | null
-  role: OrgMemberRole | null
+  role:    OrgMemberRole | null
+  onClose?: () => void
 }
 
-export function DashboardSidebar({ user, organization, role }: SidebarProps) {
+export function DashboardSidebar({ user, organization, role, onClose }: SidebarProps) {
   const t        = useTranslations('Nav')
   const pathname = usePathname()
   const router   = useRouter()
@@ -41,7 +42,8 @@ export function DashboardSidebar({ user, organization, role }: SidebarProps) {
     { label: t('dashboard'),   href: '/dashboard',       icon: LayoutDashboard },
     { label: t('projects'),    href: '/projects',         icon: FolderOpen },
     { label: t('jobBoard'),    href: '/bolsa-de-trabajo', icon: Briefcase },
-    { label: 'Mis asignaciones', href: '/mi-crew',        icon: Users2 },
+    { label: 'Mis asignaciones',  href: '/mi-crew',            icon: Users2 },
+    { label: 'Mis postulaciones', href: '/mis-postulaciones',  icon: ClipboardList },
   ]
 
   const BOTTOM_ITEMS = [
@@ -60,9 +62,19 @@ export function DashboardSidebar({ user, organization, role }: SidebarProps) {
   }
 
   return (
-    <aside className="flex w-60 shrink-0 flex-col border-r bg-sidebar">
+    <aside className="flex h-full w-60 shrink-0 flex-col border-r bg-sidebar">
       {/* Logo / Org name */}
       <div className="flex h-14 items-center gap-2.5 border-b px-4">
+        {/* Mobile close button */}
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            className="mr-1 rounded-md p-1 hover:bg-sidebar-accent lg:hidden"
+          >
+            <X className="size-4" />
+          </button>
+        )}
         <div className="flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-md bg-foreground">
           {organization?.logo_url ? (
             <Image
@@ -88,6 +100,7 @@ export function DashboardSidebar({ user, organization, role }: SidebarProps) {
           <Link
             key={href}
             href={href}
+            onClick={onClose}
             className={cn(
               'flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-colors',
               isActive(href)

@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
+import { sendEmail } from '@/lib/email'
 import { z } from 'zod'
 
 const Schema = z.object({
@@ -21,6 +23,14 @@ export async function POST(request: Request) {
   }
 
   const admin = createAdminClient()
+
+  // Detect logged-in user for linking application to profile
+  let applicantUserId: string | null = null
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) applicantUserId = user.id
+  } catch { /* unauthenticated — fine */ }
 
   // Verify offer exists and is open — include project and org owner email
   const { data: offer } = await admin
@@ -72,6 +82,7 @@ export async function POST(request: Request) {
     proposed_rate:   body.proposed_rate ?? null,
     portfolio_url:   body.portfolio_url ?? null,
     cv_url:          body.cv_url ?? null,
+    ...(applicantUserId ? { applicant_user_id: applicantUserId } : {}),
   })
 
   if (error) {
@@ -94,28 +105,40 @@ export async function POST(request: Request) {
       const projectId = o.projects?.id
       const staffUrl = projectId ? `${appUrl}/projects/${projectId}/staff` : `${appUrl}/dashboard`
 
-      await admin.from('email_notifications').insert({
-        organization_id: o.organization_id,
-        recipient_email: (ownerProfile as unknown as { email: string }).email,
-        recipient_name:  (ownerProfile as unknown as { full_name: string }).full_name,
-        template_name:   'new_staff_application',
-        subject:         `Nueva postulación: ${body.full_name} se postuló para "${o.title}"`,
-        body_html:       buildNotificationEmail({
-          ownerName:    (ownerProfile as unknown as { full_name: string }).full_name,
-          applicantName: body.full_name,
-          applicantEmail: body.email,
-          offerTitle:   o.title,
-          projectTitle: o.projects?.title ?? '',
-          coverNote:    body.cover_note ?? null,
-          proposedRate: body.proposed_rate ?? null,
-          portfolioUrl: body.portfolio_url ?? null,
-          cvUrl:        body.cv_url ?? null,
-          staffUrl,
-        }),
-        metadata: { job_offer_id: body.offer_id },
-      }) // fire-and-forget — errors here don't fail the request
+      const ownerEmail = (ownerProfile as unknown as { email: string }).email
+      const ownerName  = (ownerProfile as unknown as { full_name: string }).full_name
+      const html = buildNotificationEmail({
+        ownerName, applicantName: body.full_name, applicantEmail: body.email,
+        offerTitle: o.title, projectTitle: o.projects?.title ?? '',
+        coverNote: body.cover_note ?? null, proposedRate: body.proposed_rate ?? null,
+        portfolioUrl: body.portfolio_url ?? null, cvUrl: body.cv_url ?? null, staffUrl,
+      })
+      // Send real email via Resend
+      sendEmail({ to: ownerEmail, subject: `Nueva postulación: ${body.full_name} → "${o.title}"`, html }).catch(() => null)
+      // Also log in DB
+      admin.from('email_notifications').insert({
+        organization_id: o.organization_id, recipient_email: ownerEmail, recipient_name: ownerName,
+        template_name: 'new_staff_application', subject: `Nueva postulación: ${body.full_name} → "${o.title}"`,
+        body_html: html, metadata: { job_offer_id: body.offer_id },
+      })
     }
   }
+
+  // Confirmation email to applicant
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://renolito-delta.vercel.app'
+  sendEmail({
+    to: body.email,
+    subject: `Tu postulación a "${o.title}" fue recibida`,
+    html: `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"/></head>
+<body style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#1a1a1a">
+<h2 style="margin-bottom:8px">¡Hola, ${body.full_name}!</h2>
+<p>Tu postulación para el puesto <strong>${o.title}</strong>${o.projects?.title ? ` en el proyecto <strong>${o.projects.title}</strong>` : ''} fue recibida correctamente.</p>
+<p style="color:#71717a">La producción revisará tu perfil y se pondrá en contacto con vos. Podés seguir el estado de tu postulación desde tu panel en la plataforma.</p>
+<p style="margin-top:24px"><a href="${appUrl}/mis-postulaciones" style="background:#18181b;color:#fff;padding:12px 20px;border-radius:6px;text-decoration:none;font-weight:600">Ver mis postulaciones →</a></p>
+<hr style="border:none;border-top:1px solid #e4e4e7;margin:24px 0"/>
+<p style="color:#71717a;font-size:12px">Renolito Sessions</p>
+</body></html>`,
+  }).catch(() => null)
 
   return NextResponse.json({ success: true }, { status: 201 })
 }
