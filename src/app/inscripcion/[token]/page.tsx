@@ -1,8 +1,8 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { PublicRegistrationForm } from '@/components/forms/public-registration-form'
+import { ArtistRegistrationForm } from '@/components/forms/artist-registration-form'
 
-export const metadata: Metadata = { title: 'Inscripción' }
+export const metadata: Metadata = { title: 'Inscripción de artistas' }
 
 interface Props {
   params: Promise<{ token: string }>
@@ -14,16 +14,7 @@ interface ProjectData {
     description: string | null
     type: { id: string; name: string; slug: string }
   }
-  fields: Array<{
-    field_key: string
-    label: string
-    field_type: string
-    placeholder: string | null
-    helper_text: string | null
-    is_required: boolean
-    options: Array<{ value: string; label: string }> | null
-    display_order: number
-  }>
+  fields: unknown[]
   sessions: Array<{
     id: string
     title: string
@@ -38,7 +29,7 @@ async function getProjectData(token: string): Promise<ProjectData | null> {
     `http://localhost:${process.env.PORT ?? 3000}`
 
   const res = await fetch(`${baseUrl}/api/inscripcion/${token}`, {
-    next: { revalidate: 60 }, // Cache for 60s — form fields rarely change
+    cache: 'no-store',
   })
 
   if (!res.ok) return null
@@ -65,13 +56,16 @@ export default async function InscripcionPage({ params }: Props) {
           {data.project.description && (
             <p className="text-muted-foreground">{data.project.description}</p>
           )}
+          <div className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
+            Convocatoria para artistas y músicos
+          </div>
         </div>
 
         <div className="rounded-xl border bg-card p-6 shadow-sm sm:p-8">
-          <PublicRegistrationForm
+          <ArtistRegistrationForm
             token={token}
-            fields={data.fields}
             sessions={data.sessions}
+            projectTitle={data.project.title}
           />
         </div>
 

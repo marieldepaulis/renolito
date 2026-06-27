@@ -1,10 +1,11 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, FolderOpen, Briefcase,
-  Settings, LogOut, Music, User, ChevronDown,
+  Settings, LogOut, Music, User, ChevronDown, Users2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
@@ -40,6 +41,7 @@ export function DashboardSidebar({ user, organization, role }: SidebarProps) {
     { label: t('dashboard'),   href: '/dashboard',       icon: LayoutDashboard },
     { label: t('projects'),    href: '/projects',         icon: FolderOpen },
     { label: t('jobBoard'),    href: '/bolsa-de-trabajo', icon: Briefcase },
+    { label: 'Mis asignaciones', href: '/mi-crew',        icon: Users2 },
   ]
 
   const BOTTOM_ITEMS = [
@@ -61,8 +63,19 @@ export function DashboardSidebar({ user, organization, role }: SidebarProps) {
     <aside className="flex w-60 shrink-0 flex-col border-r bg-sidebar">
       {/* Logo / Org name */}
       <div className="flex h-14 items-center gap-2.5 border-b px-4">
-        <div className="flex size-7 items-center justify-center rounded-md bg-foreground">
-          <Music className="size-3.5 text-background" />
+        <div className="flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-md bg-foreground">
+          {organization?.logo_url ? (
+            <Image
+              src={organization.logo_url}
+              alt={organization.name}
+              width={28}
+              height={28}
+              className="size-full object-contain"
+              unoptimized
+            />
+          ) : (
+            <Music className="size-3.5 text-background" />
+          )}
         </div>
         <span className="truncate text-sm font-semibold">
           {organization?.name ?? 'Plataforma Producción'}

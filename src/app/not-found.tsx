@@ -9,10 +9,10 @@ export default function NotFound() {
         El enlace que seguiste no existe o ya no está disponible.
       </p>
       <Link
-        href="/"
+        href="/dashboard"
         className="inline-flex h-9 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
       >
-        Volver al inicio
+        Ir al dashboard
       </Link>
     </div>
   )

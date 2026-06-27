@@ -40,12 +40,13 @@ export function LoginForm() {
       setLoading(false)
       return
     }
-    router.push('/dashboard')
-    router.refresh()
+    // Hard redirect so the browser sends fresh cookies to the server on the
+    // next request — soft router.push sometimes races against cookie writes.
+    window.location.href = '/dashboard'
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form onSubmit={handleSubmit(onSubmit)} method="post" className="space-y-4">
       <div className="space-y-1.5">
         <label htmlFor="email" className="text-sm font-medium">{t('email')}</label>
         <input

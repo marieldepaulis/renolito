@@ -25,6 +25,8 @@ const BodySchema = z.object({
   phone:               z.string().min(5).max(30),
   city:                z.string().min(2).max(100),
   preferred_session_id: z.string().uuid().optional().nullable(),
+  // Presskit PDF (optional — post migration 004)
+  presskit_url:         z.preprocess((v) => v === '' ? null : v, z.string().url().nullable().optional()),
   // All other dynamic form answers, keyed by field_key
   answers: z.record(z.string(), z.unknown()),
 })
@@ -81,19 +83,57 @@ export async function POST(
   }
 
   // 4. Create the application (organization_id auto-filled by DB trigger)
-  const { data: application, error: appError } = await supabase
+  // Try with presskit_url first; fall back if column not yet added (pre-migration 004)
+  let application: { id: string; access_token: string } | null = null
+  let appError: unknown = null
+
+  const artistAnswers = body.answers as Record<string, unknown>
+
+  const insertPayload: Record<string, unknown> = {
+    project_id:           project.id,
+    guest_email:          body.email.toLowerCase(),
+    guest_name:           body.full_name,
+    preferred_session_id: body.preferred_session_id ?? null,
+  }
+
+  // Add music-specific columns if migration 004 has been applied
+  if (body.presskit_url)             insertPayload.presskit_url  = body.presskit_url
+  if (artistAnswers.musical_genre)   insertPayload.musical_genre = artistAnswers.musical_genre
+  if (artistAnswers.member_count)    insertPayload.member_count  = Number(artistAnswers.member_count)
+  if (artistAnswers.music_links)     insertPayload.music_links   = artistAnswers.music_links
+  if (artistAnswers.band_name)       insertPayload.band_name     = artistAnswers.band_name
+
+  const result = await supabase
     .from('artist_applications')
-    .insert({
-      project_id:           project.id,
-      guest_email:          body.email.toLowerCase(),
-      guest_name:           body.full_name,
-      preferred_session_id: body.preferred_session_id ?? null,
-    })
+    .insert(insertPayload)
     .select('id, access_token')
     .single()
 
+  if (result.error && (
+    result.error.message.includes('presskit_url') ||
+    result.error.message.includes('musical_genre') ||
+    result.error.message.includes('band_name')
+  )) {
+    // Migration 004 not yet applied — retry without the new columns
+    const fallback = await supabase
+      .from('artist_applications')
+      .insert({
+        project_id:           project.id,
+        guest_email:          body.email.toLowerCase(),
+        guest_name:           body.full_name,
+        preferred_session_id: body.preferred_session_id ?? null,
+      })
+      .select('id, access_token')
+      .single()
+    application = fallback.data
+    appError    = fallback.error
+  } else {
+    application = result.data
+    appError    = result.error
+  }
+
   if (appError || !application) {
-    console.error('[apply]', appError?.message)
+    console.error('[apply]', (appError as { message?: string } | null)?.message)
     return NextResponse.json(
       { error: 'Error al guardar la inscripción. Inténtalo de nuevo.' },
       { status: 500 },

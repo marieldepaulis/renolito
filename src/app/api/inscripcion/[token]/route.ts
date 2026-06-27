@@ -26,16 +26,28 @@ export async function GET(
 
   const supabase = createAdminClient()
 
-  // 1. Resolve project from token
-  const { data: project, error: projectError } = await supabase
+  // 1. Resolve project — accept slug (post-migration 002) or legacy UUID token
+  let project: unknown = null
+  let projectError: unknown = null
+
+  // Try slug first, then fall back to registration_link_token
+  const bySlug = await supabase
     .from('projects')
-    .select(`
-      id, title, description, registration_open,
-      hide_status_from_applicants,
-      project_types(id, name, slug)
-    `)
-    .eq('registration_link_token', token)
+    .select(`id, title, description, registration_open, hide_status_from_applicants, project_types(id, name, slug)`)
+    .eq('slug', token)
     .maybeSingle()
+
+  if (bySlug.data) {
+    project = bySlug.data
+  } else {
+    const byToken = await supabase
+      .from('projects')
+      .select(`id, title, description, registration_open, hide_status_from_applicants, project_types(id, name, slug)`)
+      .eq('registration_link_token', token)
+      .maybeSingle()
+    project = byToken.data
+    projectError = byToken.error
+  }
 
   if (projectError || !project) {
     return NextResponse.json(
@@ -44,14 +56,20 @@ export async function GET(
     )
   }
 
-  if (!project.registration_open) {
+  const p = project as unknown as {
+    id: string; title: string; description: string | null
+    registration_open: boolean; hide_status_from_applicants: boolean
+    project_types: { id: string; name: string; slug: string }
+  }
+
+  if (!p.registration_open) {
     return NextResponse.json(
       { error: 'Las inscripciones para este proyecto están cerradas.' },
       { status: 403 },
     )
   }
 
-  const projectType = project.project_types as unknown as { id: string; name: string; slug: string }
+  const projectType = p.project_types
 
   // 2. Fetch form fields: common fields + type-specific fields
   const { data: fields } = await supabase
@@ -67,14 +85,14 @@ export async function GET(
   const { data: sessions } = await supabase
     .from('sessions')
     .select('id, title, scheduled_date, start_time')
-    .eq('project_id', project.id)
+    .eq('project_id', p.id)
     .eq('status', 'scheduled')
     .order('scheduled_date')
 
   return NextResponse.json({
     project: {
-      title:       project.title,
-      description: project.description,
+      title:       p.title,
+      description: p.description,
       type:        projectType,
     },
     fields:   fields ?? [],

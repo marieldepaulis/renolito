@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { Plus } from 'lucide-react'
 import { formatDate, formatCurrency } from '@/lib/utils'
+import { JobOfferCard } from '@/components/projects/job-offer-card'
 
 export const metadata: Metadata = { title: 'Staff técnico' }
 
@@ -50,7 +51,7 @@ export default async function StaffPage({ params }: Props) {
     .select(`
       id, title, speciality, is_paid, is_barter,
       estimated_rate, rate_currency, rate_unit, status,
-      required_date,
+      required_date, description, barter_description, max_applicants,
       technician_applications(id, status, agreed_rate,
         technician_profiles(user_id,
           profiles(full_name, email)
@@ -101,99 +102,9 @@ export default async function StaffPage({ params }: Props) {
         </div>
       ) : (
         <div className="space-y-4">
-          {offers.map((offer) => {
-            const apps = (
-              offer.technician_applications as unknown as Array<{
-                id: string
-                status: string
-                agreed_rate: number | null
-                technician_profiles: {
-                  profiles: { full_name: string; email: string } | null
-                } | null
-              }>
-            ) ?? []
-
-            return (
-              <div key={offer.id} className="rounded-lg border bg-card">
-                <div className="flex items-start justify-between p-5">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-medium">{offer.title}</h3>
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                          offer.is_barter
-                            ? 'bg-purple-100 text-purple-700'
-                            : offer.is_paid
-                            ? 'bg-emerald-100 text-emerald-700'
-                            : 'bg-zinc-100 text-zinc-600'
-                        }`}
-                      >
-                        {offer.is_barter
-                          ? 'Intercambio'
-                          : offer.is_paid
-                          ? 'Remunerado'
-                          : 'Colaborativo'}
-                      </span>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      {offer.speciality}
-                      {offer.estimated_rate
-                        ? ` · ${formatCurrency(offer.estimated_rate, offer.rate_currency)}/${offer.rate_unit}`
-                        : ''}
-                      {offer.required_date
-                        ? ` · ${formatDate(offer.required_date, { day: '2-digit', month: 'short' })}`
-                        : ''}
-                    </p>
-                  </div>
-                  <span
-                    className={`rounded-full px-2.5 py-1 text-xs font-medium ${STATUS_CLASS[offer.status]}`}
-                  >
-                    {STATUS_LABEL[offer.status] ?? offer.status}
-                  </span>
-                </div>
-
-                {apps.length > 0 && (
-                  <div className="border-t">
-                    <p className="px-5 py-2 text-xs font-medium text-muted-foreground">
-                      {apps.length} postulación{apps.length !== 1 ? 'es' : ''}
-                    </p>
-                    <div className="divide-y">
-                      {apps.map((app) => {
-                        const profile = app.technician_profiles?.profiles
-                        return (
-                          <div
-                            key={app.id}
-                            className="flex items-center justify-between px-5 py-3"
-                          >
-                            <div>
-                              <p className="text-sm font-medium">
-                                {profile?.full_name ?? '—'}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                {profile?.email ?? '—'}
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              {app.agreed_rate && (
-                                <span className="text-sm font-medium">
-                                  {formatCurrency(app.agreed_rate, offer.rate_currency)}
-                                </span>
-                              )}
-                              <span
-                                className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_CLASS[app.status]}`}
-                              >
-                                {STATUS_LABEL[app.status] ?? app.status}
-                              </span>
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )
-          })}
+          {offers.map((offer) => (
+            <JobOfferCard key={offer.id} offer={offer as Parameters<typeof JobOfferCard>[0]['offer']} />
+          ))}
         </div>
       )}
     </div>

@@ -2,9 +2,10 @@ import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import { Users, Briefcase, CalendarDays, FileText, ExternalLink } from 'lucide-react'
+import { Users, Briefcase, CalendarDays, FileText, ExternalLink, Lock } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
 import { CopyLinkButton } from '@/components/projects/copy-link-button'
+import { ProjectActions } from '@/components/projects/project-actions'
 
 export const metadata: Metadata = { title: 'Proyecto' }
 
@@ -13,10 +14,11 @@ interface Props {
 }
 
 const NAV = [
-  { label: 'Inscripciones',     href: 'inscripciones', icon: Users },
-  { label: 'Staff técnico',     href: 'staff',          icon: Briefcase },
-  { label: 'Sesiones',          href: 'sesiones',       icon: CalendarDays },
-  { label: 'Contratos',         href: 'contratos',      icon: FileText },
+  { label: 'Inscripciones',     href: 'inscripciones',    icon: Users },
+  { label: 'Staff técnico',     href: 'staff',            icon: Briefcase },
+  { label: 'Sesiones',          href: 'sesiones',         icon: CalendarDays },
+  { label: 'Contratos',         href: 'contratos',        icon: FileText },
+  { label: 'Gestión Interna',   href: 'gestion-interna',  icon: Lock, private: true },
 ]
 
 export default async function ProjectDetailPage({ params }: Props) {
@@ -25,16 +27,29 @@ export default async function ProjectDetailPage({ params }: Props) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: project } = await supabase
-    .from('projects')
-    .select(`
-      id, title, description, status, registration_open,
-      registration_link_token, hide_status_from_applicants,
-      created_at, updated_at,
-      project_types(name, icon)
-    `)
-    .eq('id', projectId)
-    .single()
+  // Try fetching slug (available after migration 002); fall back if column doesn't exist
+  let project: unknown = null
+  {
+    const { data, error } = await supabase
+      .from('projects')
+      .select(`id, title, description, status, registration_open,
+        registration_link_token, slug, hide_status_from_applicants,
+        created_at, updated_at, project_types(name, icon)`)
+      .eq('id', projectId).single()
+
+    if (error?.message?.includes('slug')) {
+      // Slug column not yet added — fetch without it
+      const { data: d2 } = await supabase
+        .from('projects')
+        .select(`id, title, description, status, registration_open,
+          registration_link_token, hide_status_from_applicants,
+          created_at, updated_at, project_types(name, icon)`)
+        .eq('id', projectId).single()
+      project = d2
+    } else {
+      project = data
+    }
+  }
 
   if (!project) notFound()
 
@@ -53,8 +68,18 @@ export default async function ProjectDetailPage({ params }: Props) {
       .eq('project_id', projectId),
   ])
 
-  const registrationUrl = `/inscripcion/${project.registration_link_token}`
-  const type = (project.project_types as unknown as { name: string } | null)?.name ?? '—'
+  const p = project as unknown as {
+    id: string; title: string; description: string | null; status: string
+    registration_open: boolean; registration_link_token: string; slug?: string | null
+    hide_status_from_applicants: boolean; created_at: string; updated_at: string
+    project_types: { name: string; icon?: string } | null
+  }
+
+  // Use slug if available (post-migration 002), otherwise fall back to UUID token
+  const publicId       = p.slug ?? p.registration_link_token
+  const registrationUrl = `/inscripcion/${publicId}`
+  const staffUrl        = `/staff/${publicId}`
+  const type = p.project_types?.name ?? '—'
 
   return (
     <div className="space-y-8">
@@ -66,81 +91,83 @@ export default async function ProjectDetailPage({ params }: Props) {
               Proyectos
             </Link>
             <span>/</span>
-            <span>{project.title}</span>
+            <span>{p.title}</span>
           </div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            {project.title}
-          </h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{p.title}</h1>
           <p className="text-sm text-muted-foreground">
             {type} · Actualizado{' '}
-            {formatDate(project.updated_at, { day: '2-digit', month: 'short' })}
+            {formatDate(p.updated_at, { day: '2-digit', month: 'short' })}
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <span
-            className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-              project.status === 'active'
-                ? 'bg-emerald-100 text-emerald-700'
-                : 'bg-zinc-100 text-zinc-600'
-            }`}
-          >
-            {project.registration_open ? 'Inscripción abierta' : 'Inscripción cerrada'}
-          </span>
-        </div>
+        <ProjectActions
+          projectId={projectId}
+          title={p.title}
+          description={p.description ?? null}
+          status={p.status as 'draft' | 'active' | 'completed' | 'cancelled'}
+        />
       </div>
 
-      {/* Registration link */}
-      <div className="flex items-center gap-3 rounded-lg border bg-muted/30 px-4 py-3">
-        <span className="flex-1 truncate font-mono text-sm text-muted-foreground">
-          {typeof window === 'undefined'
-            ? registrationUrl
-            : `${window.location.origin}${registrationUrl}`}
-        </span>
-        <CopyLinkButton url={registrationUrl} />
-        <Link
-          href={registrationUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-        >
-          <ExternalLink className="size-4" />
-        </Link>
+      {/* Registration links — artists + staff */}
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Link para artistas</p>
+          <div className="flex items-center gap-2 rounded-lg border bg-muted/30 px-3 py-2.5">
+            <span className="flex-1 truncate font-mono text-xs text-muted-foreground">{registrationUrl}</span>
+            <CopyLinkButton url={registrationUrl} />
+            <Link href={registrationUrl} target="_blank" rel="noopener noreferrer"
+              className="text-muted-foreground hover:text-foreground">
+              <ExternalLink className="size-3.5" />
+            </Link>
+          </div>
+        </div>
+        <div className="space-y-1.5">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Link para staff técnico</p>
+          <div className="flex items-center gap-2 rounded-lg border bg-amber-50 px-3 py-2.5">
+            <span className="flex-1 truncate font-mono text-xs text-muted-foreground">{staffUrl}</span>
+            <CopyLinkButton url={staffUrl} />
+            <Link href={staffUrl} target="_blank" rel="noopener noreferrer"
+              className="text-muted-foreground hover:text-foreground">
+              <ExternalLink className="size-3.5" />
+            </Link>
+          </div>
+        </div>
       </div>
 
       {/* Sub-navigation */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        {NAV.map(({ label, href, icon: Icon }) => (
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+        {NAV.map(({ label, href, icon: Icon, private: isPrivate }) => (
           <Link
             key={href}
             href={`/projects/${projectId}/${href}`}
-            className="flex flex-col items-center gap-3 rounded-lg border bg-card p-5 text-center transition-colors hover:bg-accent"
+            className={`flex flex-col items-center gap-3 rounded-lg border p-5 text-center transition-colors hover:bg-accent ${
+              isPrivate ? 'border-dashed bg-muted/20' : 'bg-card'
+            }`}
           >
-            <Icon className="size-6 text-muted-foreground" />
+            <Icon className={`size-6 ${isPrivate ? 'text-amber-600' : 'text-muted-foreground'}`} />
             <span className="text-sm font-medium">{label}</span>
           </Link>
         ))}
       </div>
 
-      {/* Quick stats */}
+      {/* Quick stats — clickable */}
       <div className="grid grid-cols-3 gap-4">
-        <div className="rounded-lg border bg-card p-4 text-center">
-          <p className="text-2xl font-bold">{artistCount.count ?? 0}</p>
-          <p className="text-sm text-muted-foreground">Inscripciones</p>
-        </div>
-        <div className="rounded-lg border bg-card p-4 text-center">
-          <p className="text-2xl font-bold">{techCount.count ?? 0}</p>
-          <p className="text-sm text-muted-foreground">Ofertas de trabajo</p>
-        </div>
-        <div className="rounded-lg border bg-card p-4 text-center">
-          <p className="text-2xl font-bold">{sessionCount.count ?? 0}</p>
-          <p className="text-sm text-muted-foreground">Sesiones</p>
-        </div>
+        {[
+          { count: artistCount.count ?? 0,  label: 'Inscripciones',      href: 'inscripciones' },
+          { count: techCount.count ?? 0,    label: 'Ofertas de trabajo',  href: 'staff' },
+          { count: sessionCount.count ?? 0, label: 'Sesiones',            href: 'sesiones' },
+        ].map(({ count, label, href }) => (
+          <Link key={href} href={`/projects/${projectId}/${href}`}
+            className="group rounded-lg border bg-card p-4 text-center transition-colors hover:bg-accent hover:border-primary/20">
+            <p className="text-2xl font-bold group-hover:text-primary transition-colors">{count}</p>
+            <p className="text-sm text-muted-foreground">{label}</p>
+          </Link>
+        ))}
       </div>
 
-      {project.description && (
+      {p.description && (
         <div className="rounded-lg border bg-card p-5">
           <h2 className="mb-2 text-sm font-medium">Descripción</h2>
-          <p className="text-sm text-muted-foreground">{project.description}</p>
+          <p className="text-sm text-muted-foreground">{p.description}</p>
         </div>
       )}
     </div>

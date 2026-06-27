@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -21,13 +21,31 @@ const Schema = z.object({
   speciality:         z.string().min(1, 'Especialidad requerida').max(100),
   is_paid:            z.boolean().default(true),
   is_barter:          z.boolean().default(false),
-  estimated_rate:     z.coerce.number().positive().optional(),
-  rate_unit:          z.enum(['hour', 'day', 'project', 'session']).optional(),
+  estimated_rate:     z.preprocess(
+    (v) => (v === '' || v == null ? undefined : Number(v)),
+    z.number().positive().optional(),
+  ),
+  rate_unit:          z.preprocess(
+    (v) => (v === '' || v == null ? undefined : v),
+    z.enum(['hour', 'day', 'project', 'session']).optional(),
+  ),
   rate_currency:      z.string().length(3).default('EUR'),
-  barter_description: z.string().max(500).optional(),
-  max_applicants:     z.coerce.number().int().positive().optional(),
-  required_date:      z.string().optional(),
-  location:           z.string().max(200).optional(),
+  barter_description: z.preprocess(
+    (v) => (v === '' || v == null ? undefined : v),
+    z.string().max(500).optional(),
+  ),
+  max_applicants:     z.preprocess(
+    (v) => (v === '' || v == null ? undefined : Number(v)),
+    z.number().int().positive().optional(),
+  ),
+  required_date:      z.preprocess(
+    (v) => (v === '' || v == null ? undefined : v),
+    z.string().optional(),
+  ),
+  location:           z.preprocess(
+    (v) => (v === '' || v == null ? undefined : v),
+    z.string().max(200).optional(),
+  ),
 })
 
 type FormData = z.infer<typeof Schema>
@@ -55,48 +73,76 @@ const SPECIALITIES = [
   'Otro',
 ]
 
-export function NewJobOfferForm({ projects }: { projects: Project[] }) {
+interface FormProps {
+  projects:         Project[]
+  defaultProjectId?: string
+  backHref?:         string
+}
+
+export function NewJobOfferForm({ projects, defaultProjectId, backHref }: FormProps) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
 
-  const { register, handleSubmit, watch, formState: { errors } } = useForm<FormData>({
+  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(Schema) as Resolver<FormData>,
-    defaultValues: { is_paid: true, is_barter: false, rate_currency: 'EUR' },
+    mode: 'all',
+    defaultValues: {
+      is_paid:      true,
+      is_barter:    false,
+      rate_currency:'EUR',
+      project_id:   defaultProjectId ?? '',
+    },
   })
+
+  // Ensure react-hook-form internal store has the fixed project id.
+  // A hidden <input> with a static value prop never fires onChange,
+  // so we use setValue which writes directly to the form store.
+  useEffect(() => {
+    if (defaultProjectId) setValue('project_id', defaultProjectId)
+  }, [defaultProjectId, setValue])
 
   const isPaid   = watch('is_paid')
   const isBarter = watch('is_barter')
 
   async function onSubmit(data: FormData) {
     setLoading(true)
-    const res = await fetch('/api/job-offers', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({
-        ...data,
-        estimated_rate:     data.estimated_rate     ?? null,
-        rate_unit:          data.rate_unit           ?? null,
-        barter_description: data.barter_description ?? null,
-        max_applicants:     data.max_applicants      ?? null,
-        required_date:      data.required_date       || null,
-        location:           data.location            || null,
-      }),
-    })
-    const result = await res.json()
-    if (!res.ok) {
-      toast.error(result.error ?? 'Error al crear la oferta')
+    try {
+      const res = await fetch('/api/job-offers', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({
+          ...data,
+          estimated_rate:     data.estimated_rate     ?? null,
+          rate_unit:          data.rate_unit           ?? null,
+          barter_description: data.barter_description ?? null,
+          max_applicants:     data.max_applicants      ?? null,
+          required_date:      data.required_date       || null,
+          location:           data.location            || null,
+        }),
+      })
+      const result = await res.json()
+      if (!res.ok) {
+        toast.error(result.error ?? 'Error al crear la oferta')
+        return
+      }
+      toast.success('Oferta publicada')
+      router.push(backHref ?? '/bolsa-de-trabajo')
+      router.refresh()
+    } catch (err) {
+      toast.error('Error de red al enviar la oferta')
+    } finally {
       setLoading(false)
-      return
     }
-    toast.success('Oferta publicada')
-    router.push('/bolsa-de-trabajo')
-    router.refresh()
+  }
+
+  function onValidationError(errs: typeof errors) {
+    toast.error('Revisá los campos marcados en rojo')
   }
 
   const baseInput = 'flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring'
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+    <form onSubmit={handleSubmit(onSubmit, onValidationError)} className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2">
 
         {/* Proyecto */}
@@ -104,12 +150,18 @@ export function NewJobOfferForm({ projects }: { projects: Project[] }) {
           <label htmlFor="project_id" className="text-sm font-medium">
             Proyecto <span className="text-destructive">*</span>
           </label>
-          <select id="project_id" {...register('project_id')} className={baseInput}>
-            <option value="">Selecciona un proyecto…</option>
-            {projects.map((p) => (
-              <option key={p.id} value={p.id}>{p.title}</option>
-            ))}
-          </select>
+          {defaultProjectId ? (
+            <div className={`${baseInput} bg-muted/50 text-muted-foreground`}>
+              {projects[0]?.title ?? defaultProjectId}
+            </div>
+          ) : (
+            <select id="project_id" {...register('project_id')} className={baseInput}>
+              <option value="">Selecciona un proyecto…</option>
+              {projects.map((p) => (
+                <option key={p.id} value={p.id}>{p.title}</option>
+              ))}
+            </select>
+          )}
           {errors.project_id && <p className="text-xs text-destructive">{errors.project_id.message}</p>}
         </div>
 
@@ -256,10 +308,21 @@ export function NewJobOfferForm({ projects }: { projects: Project[] }) {
 
       </div>
 
+      {Object.keys(errors).length > 0 && (
+        <div className="rounded-md border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+          <p className="font-medium mb-1">Corregí los siguientes campos:</p>
+          <ul className="list-disc list-inside space-y-0.5">
+            {Object.entries(errors).map(([field, err]) => (
+              <li key={field}>{err?.message as string}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <div className="flex justify-end gap-3">
         <button
           type="button"
-          onClick={() => router.back()}
+          onClick={() => router.push(backHref ?? '/bolsa-de-trabajo')}
           className="inline-flex h-9 items-center rounded-md border px-4 text-sm font-medium transition-colors hover:bg-accent"
         >
           Cancelar
