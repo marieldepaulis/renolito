@@ -57,7 +57,7 @@ export function TechnicianProfileForm({ userId, existingProfile, specialties, my
   const [bio,            setBio]            = useState(existingProfile?.bio ?? '')
   const [hourlyRate,     setHourlyRate]     = useState(existingProfile?.hourly_rate?.toString() ?? '')
   const [dailyRate,      setDailyRate]      = useState(existingProfile?.daily_rate?.toString() ?? '')
-  const [currency,       setCurrency]       = useState(existingProfile?.rate_currency ?? 'ARS')
+  const [currency,       setCurrency]       = useState(existingProfile?.rate_currency ?? 'EUR')
   const [isAvailable,    setIsAvailable]    = useState(existingProfile?.is_available_for_hire ?? false)
   const [availNotes,     setAvailNotes]     = useState(existingProfile?.availability_notes ?? '')
   const [location,       setLocation]       = useState(existingProfile?.location ?? '')
@@ -277,11 +277,12 @@ export function TechnicianProfileForm({ userId, existingProfile, specialties, my
           <div className="space-y-1.5">
             <label className={labelCls}>Moneda</label>
             <select value={currency} onChange={e => setCurrency(e.target.value)} className={inputCls}>
-              <option value="ARS">ARS — Peso arg.</option>
-              <option value="USD">USD — Dólar</option>
               <option value="EUR">EUR — Euro</option>
+              <option value="GBP">GBP — Libra esterlina</option>
+              <option value="USD">USD — Dólar</option>
+              <option value="CHF">CHF — Franco suizo</option>
+              <option value="ARS">ARS — Peso arg.</option>
               <option value="MXN">MXN — Peso mex.</option>
-              <option value="CLP">CLP — Peso chile.</option>
               <option value="BRL">BRL — Real</option>
               <option value="COP">COP — Peso col.</option>
               <option value="GBP">GBP — Libra</option>

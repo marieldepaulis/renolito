@@ -1,11 +1,17 @@
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import { Music } from 'lucide-react'
+import { createClient } from '@/lib/supabase/server'
 
-export default function AuthLayout({
+export default async function AuthLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  // If user already has an active session, send them straight to dashboard
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (user) redirect('/dashboard')
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
       {/* Left panel — branding */}

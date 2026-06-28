@@ -16,11 +16,11 @@ export default async function GestionInternaPage({ params }: Props) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  // Fetch project (includes production_notes which is private)
+  const _col = /^[0-9a-f-]{36}$/i.test(projectId) ? 'id' : 'slug'
   const { data: project } = await supabase
     .from('projects')
     .select('id, title, organization_id')
-    .eq('id', projectId)
+    .eq(_col, projectId)
     .single()
 
   if (!project) notFound()

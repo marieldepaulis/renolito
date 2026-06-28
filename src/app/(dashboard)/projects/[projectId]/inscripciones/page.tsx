@@ -16,18 +16,15 @@ export default async function InscripcionesPage({ params }: Props) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  // Try with slug; fall back if column doesn't exist (pre-migration 002)
+  // Accept slug or UUID in the URL param
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  const col = UUID_RE.test(projectId) ? 'id' : 'slug'
+
   let project: { id: string; title: string; organization_id: string; registration_link_token: string; slug?: string | null } | null = null
   {
-    const { data, error } = await supabase
-      .from('projects').select('id, title, organization_id, registration_link_token, slug').eq('id', projectId).single()
-    if (error?.message?.includes('slug')) {
-      const { data: d2 } = await supabase
-        .from('projects').select('id, title, organization_id, registration_link_token').eq('id', projectId).single()
-      project = d2
-    } else {
-      project = data
-    }
+    const { data } = await supabase
+      .from('projects').select('id, title, organization_id, registration_link_token, slug').eq(col, projectId).single()
+    project = data
   }
 
   if (!project) notFound()

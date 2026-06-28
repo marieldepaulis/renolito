@@ -27,10 +27,11 @@ export default async function ContratosPage({ params }: Props) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
+  const _col = /^[0-9a-f-]{36}$/i.test(projectId) ? 'id' : 'slug'
   const { data: project } = await supabase
     .from('projects')
     .select('id, title, organization_id')
-    .eq('id', projectId)
+    .eq(_col, projectId)
     .single()
 
   if (!project) notFound()

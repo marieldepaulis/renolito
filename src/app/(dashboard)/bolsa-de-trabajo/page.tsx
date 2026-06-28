@@ -168,7 +168,7 @@ export default async function BolsaDeTrabajoPage() {
                   {offer.is_barter
                     ? `Canje: ${offer.barter_description ?? 'Ver detalles'}`
                     : offer.is_paid && offer.estimated_rate
-                      ? `${formatCurrency(offer.estimated_rate, offer.rate_currency ?? 'ARS')}${offer.rate_unit ? `/${offer.rate_unit}` : ''}`
+                      ? `${formatCurrency(offer.estimated_rate, offer.rate_currency ?? 'EUR')}${offer.rate_unit ? `/${offer.rate_unit}` : ''}`
                       : 'Sin remuneración'}
                 </p>
                 <p className="text-xs text-muted-foreground">Publicada: {formatDate(offer.created_at)}</p>

@@ -107,7 +107,7 @@ export default async function MiCrewPage() {
                   )}
                   {a.agreed_rate && (
                     <span className="font-medium text-foreground">
-                      {new Intl.NumberFormat('es-AR', { style: 'currency', currency: a.rate_currency }).format(a.agreed_rate)}
+                      {new Intl.NumberFormat('es-ES', { style: 'currency', currency: a.rate_currency ?? 'EUR' }).format(a.agreed_rate)}
                     </span>
                   )}
                 </div>

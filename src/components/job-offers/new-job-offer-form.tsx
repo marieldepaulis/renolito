@@ -254,7 +254,7 @@ export function NewJobOfferForm({ projects, defaultProjectId, backHref }: FormPr
                 <option value="USD">USD — Dólar</option>
                 <option value="GBP">GBP — Libra esterlina</option>
                 <option value="CHF">CHF — Franco suizo</option>
-                <option value="ARS">ARS — Peso argentino</option>
+                <option value="ARS">ARS — Peso argentino (Argentina)</option>
                 <option value="MXN">MXN — Peso mexicano</option>
                 <option value="COP">COP — Peso colombiano</option>
                 <option value="CLP">CLP — Peso chileno</option>

@@ -11,7 +11,7 @@ const PostSchema = z.object({
   external_name:  z.preprocess((v) => v === '' ? null : v, z.string().max(200).nullable().optional()),
   external_email: z.preprocess((v) => v === '' ? null : v, z.string().email().nullable().optional()),
   agreed_rate:    z.preprocess((v) => (v === '' || v == null) ? null : Number(v), z.number().positive().nullable().optional()),
-  rate_currency:  z.string().max(3).default('ARS'),
+  rate_currency:  z.string().max(3).default('EUR'),
   notes:          z.preprocess((v) => v === '' ? null : v, z.string().max(1000).nullable().optional()),
 })
 
