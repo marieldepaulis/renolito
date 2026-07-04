@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, FolderOpen, Briefcase,
   Settings, LogOut, Music, User, ChevronDown, Users2, X, ClipboardList,
+  UsersRound, Receipt,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
@@ -39,11 +40,13 @@ export function DashboardSidebar({ user, organization, role, onClose }: SidebarP
   const [open, setOpen] = useState(false)
 
   const NAV_ITEMS = [
-    { label: t('dashboard'),   href: '/dashboard',       icon: LayoutDashboard },
-    { label: t('projects'),    href: '/projects',         icon: FolderOpen },
-    { label: t('jobBoard'),    href: '/bolsa-de-trabajo', icon: Briefcase },
-    { label: 'Mis asignaciones',  href: '/mi-crew',            icon: Users2 },
-    { label: 'Mis postulaciones', href: '/mis-postulaciones',  icon: ClipboardList },
+    { label: t('dashboard'),        href: '/dashboard',        icon: LayoutDashboard },
+    { label: t('projects'),         href: '/projects',          icon: FolderOpen },
+    { label: t('jobBoard'),         href: '/bolsa-de-trabajo',  icon: Briefcase },
+    { label: 'Mi Staff',            href: '/mi-staff',          icon: UsersRound },
+    { label: 'Finanzas',            href: '/finanzas',          icon: Receipt },
+    { label: 'Mis asignaciones',    href: '/mi-crew',           icon: Users2 },
+    { label: 'Mis postulaciones',   href: '/mis-postulaciones', icon: ClipboardList },
   ]
 
   const BOTTOM_ITEMS = [
