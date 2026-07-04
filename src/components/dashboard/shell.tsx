@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { usePathname } from 'next/navigation'
-import { Menu } from 'lucide-react'
+import { Menu, Music } from 'lucide-react'
+import Image from 'next/image'
 import { DashboardSidebar } from './sidebar'
 import type { OrgMemberRole } from '@/types/database'
 
@@ -69,13 +70,28 @@ export function DashboardShell({ user, organization, role, children }: ShellProp
           <button
             type="button"
             onClick={() => setMobileOpen(true)}
-            className="rounded-md p-1.5 hover:bg-accent active:bg-accent"
+            className="shrink-0 rounded-md p-1.5 hover:bg-accent active:bg-accent"
             aria-label="Abrir menú"
             aria-expanded={mobileOpen}
           >
             <Menu className="size-5" />
           </button>
-          <span className="truncate text-sm font-semibold">
+          {/* Logo */}
+          <div className="flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-md bg-foreground">
+            {organization?.logo_url ? (
+              <Image
+                src={organization.logo_url}
+                alt={organization.name ?? ''}
+                width={28}
+                height={28}
+                className="size-full object-contain"
+                unoptimized
+              />
+            ) : (
+              <Music className="size-3.5 text-background" />
+            )}
+          </div>
+          <span className="min-w-0 truncate text-sm font-semibold">
             {organization?.name ?? 'Renolito Sessions'}
           </span>
         </header>

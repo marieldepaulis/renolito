@@ -123,32 +123,32 @@ export default async function ProjectDetailPage({ params }: Props) {
       </div>
 
       {/* Sub-navigation */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         {NAV.map(({ label, href, icon: Icon, private: isPrivate }) => (
           <Link
             key={href}
             href={`/projects/${projectId}/${href}`}
-            className={`flex flex-col items-center gap-3 rounded-lg border p-5 text-center transition-colors hover:bg-accent ${
+            className={`flex flex-col items-center gap-2.5 rounded-lg border p-4 text-center transition-colors hover:bg-accent ${
               isPrivate ? 'border-dashed bg-muted/20' : 'bg-card'
             }`}
           >
-            <Icon className={`size-6 ${isPrivate ? 'text-amber-600' : 'text-muted-foreground'}`} />
-            <span className="text-sm font-medium">{label}</span>
+            <Icon className={`size-5 ${isPrivate ? 'text-amber-600' : 'text-muted-foreground'}`} />
+            <span className="text-xs font-medium leading-tight">{label}</span>
           </Link>
         ))}
       </div>
 
       {/* Quick stats — clickable */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 gap-3">
         {[
-          { count: artistCount.count ?? 0,  label: 'Inscripciones',      href: 'inscripciones' },
-          { count: techCount.count ?? 0,    label: 'Ofertas de trabajo',  href: 'staff' },
-          { count: sessionCount.count ?? 0, label: 'Sesiones',            href: 'sesiones' },
+          { count: artistCount.count ?? 0,  label: 'Inscripciones',     href: 'inscripciones' },
+          { count: techCount.count ?? 0,    label: 'Ofertas',            href: 'staff' },
+          { count: sessionCount.count ?? 0, label: 'Sesiones',           href: 'sesiones' },
         ].map(({ count, label, href }) => (
           <Link key={href} href={`/projects/${projectId}/${href}`}
-            className="group rounded-lg border bg-card p-4 text-center transition-colors hover:bg-accent hover:border-primary/20">
-            <p className="text-2xl font-bold group-hover:text-primary transition-colors">{count}</p>
-            <p className="text-sm text-muted-foreground">{label}</p>
+            className="group rounded-lg border bg-card p-3 text-center transition-colors hover:bg-accent hover:border-primary/20 sm:p-4">
+            <p className="text-xl font-bold group-hover:text-primary transition-colors sm:text-2xl">{count}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground sm:text-sm">{label}</p>
           </Link>
         ))}
       </div>

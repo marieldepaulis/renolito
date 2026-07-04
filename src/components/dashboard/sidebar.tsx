@@ -117,6 +117,7 @@ export function DashboardSidebar({ user, organization, role, onClose }: SidebarP
 
         <Link
           href="/mi-perfil-tecnico"
+          onClick={onClose}
           className={cn(
             'flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-colors',
             pathname.startsWith('/mi-perfil-tecnico')
@@ -135,6 +136,7 @@ export function DashboardSidebar({ user, organization, role, onClose }: SidebarP
           <Link
             key={href}
             href={href}
+            onClick={onClose}
             className="flex items-center gap-2.5 rounded-md px-3 py-2 text-sm text-sidebar-foreground transition-colors hover:bg-sidebar-accent/50"
           >
             <Icon className="size-4 shrink-0" />
@@ -166,7 +168,7 @@ export function DashboardSidebar({ user, organization, role, onClose }: SidebarP
             <div className="absolute bottom-full left-0 mb-1 w-full rounded-md border bg-popover shadow-md">
               <Link
                 href="/perfil"
-                onClick={() => setOpen(false)}
+                onClick={() => { setOpen(false); onClose?.() }}
                 className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent"
               >
                 <User className="size-4" />
