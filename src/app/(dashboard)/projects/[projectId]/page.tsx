@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import { Users, Briefcase, CalendarDays, FileText, ExternalLink, Lock, Receipt } from 'lucide-react'
+import { Users, Briefcase, CalendarDays, FileText, ExternalLink, Lock, Receipt, Users2 } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
 import { CopyLinkButton } from '@/components/projects/copy-link-button'
 import { ProjectActions } from '@/components/projects/project-actions'
@@ -17,6 +17,7 @@ const NAV = [
   { label: 'Inscripciones',     href: 'inscripciones',    icon: Users },
   { label: 'Staff técnico',     href: 'staff',            icon: Briefcase },
   { label: 'Sesiones',          href: 'sesiones',         icon: CalendarDays },
+  { label: 'Colaboradores',     href: 'colaboradores',    icon: Users2 },
   { label: 'Finanzas',          href: 'finanzas',         icon: Receipt },
   { label: 'Contratos',         href: 'contratos',        icon: FileText },
   { label: 'Gestión Interna',   href: 'gestion-interna',  icon: Lock, private: true },
@@ -124,7 +125,7 @@ export default async function ProjectDetailPage({ params }: Props) {
       </div>
 
       {/* Sub-navigation */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-7">
         {NAV.map(({ label, href, icon: Icon, private: isPrivate }) => (
           <Link
             key={href}
