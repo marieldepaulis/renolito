@@ -12,10 +12,15 @@ const PostSchema = z.object({
   notes:    z.preprocess((v) => v === '' ? null : v, z.string().max(1000).nullable().optional()),
 })
 
-async function getOrgId(projectId: string) {
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+async function getOrgAndId(projectId: string): Promise<{ orgId: string; uuid: string } | null> {
   const admin = createAdminClient()
-  const { data } = await admin.from('projects').select('organization_id').eq('id', projectId).single()
-  return (data as unknown as { organization_id: string } | null)?.organization_id ?? null
+  const col = UUID_RE.test(projectId) ? 'id' : 'slug'
+  const { data } = await admin.from('projects').select('id, organization_id').eq(col, projectId).single()
+  if (!data) return null
+  const d = data as unknown as { id: string; organization_id: string }
+  return { orgId: d.organization_id, uuid: d.id }
 }
 
 async function verifyMembership(orgId: string, userId: string) {
@@ -33,15 +38,15 @@ export async function GET(_req: Request, { params }: Ctx) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'No autenticado.' }, { status: 401 })
 
-  const orgId = await getOrgId(projectId)
-  if (!orgId) return NextResponse.json({ error: 'No encontrado.' }, { status: 404 })
-  if (!(await verifyMembership(orgId, user.id))) return NextResponse.json({ error: 'Sin acceso.' }, { status: 403 })
+  const proj = await getOrgAndId(projectId)
+  if (!proj) return NextResponse.json({ error: 'No encontrado.' }, { status: 404 })
+  if (!(await verifyMembership(proj.orgId, user.id))) return NextResponse.json({ error: 'Sin acceso.' }, { status: 403 })
 
   const admin = createAdminClient()
   const { data, error } = await admin
     .from('project_documents')
     .select('id, title, url, doc_type, notes, created_at')
-    .eq('project_id', projectId)
+    .eq('project_id', proj.uuid)
     .order('created_at', { ascending: false })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
@@ -61,14 +66,14 @@ export async function POST(request: Request, { params }: Ctx) {
     return NextResponse.json({ error: msg }, { status: 400 })
   }
 
-  const orgId = await getOrgId(projectId)
-  if (!orgId) return NextResponse.json({ error: 'No encontrado.' }, { status: 404 })
-  if (!(await verifyMembership(orgId, user.id))) return NextResponse.json({ error: 'Sin acceso.' }, { status: 403 })
+  const proj = await getOrgAndId(projectId)
+  if (!proj) return NextResponse.json({ error: 'No encontrado.' }, { status: 404 })
+  if (!(await verifyMembership(proj.orgId, user.id))) return NextResponse.json({ error: 'Sin acceso.' }, { status: 403 })
 
   const admin = createAdminClient()
   const { data, error } = await admin
     .from('project_documents')
-    .insert({ project_id: projectId, organization_id: orgId, ...body })
+    .insert({ project_id: proj.uuid, organization_id: proj.orgId, ...body })
     .select('id, title, url, doc_type, notes, created_at')
     .single()
 

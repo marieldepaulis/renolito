@@ -11,12 +11,15 @@ const PatchSchema = z.object({
   status:      z.enum(['draft', 'active', 'completed', 'cancelled']).optional(),
 })
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 async function getVerifiedMembership(projectId: string, userId: string) {
   const admin = createAdminClient()
+  const col = UUID_RE.test(projectId) ? 'id' : 'slug'
   const { data: project } = await admin
     .from('projects')
-    .select('organization_id')
-    .eq('id', projectId)
+    .select('id, organization_id')
+    .eq(col, projectId)
     .single()
   if (!project) return null
 
@@ -29,7 +32,7 @@ async function getVerifiedMembership(projectId: string, userId: string) {
     .maybeSingle()
   if (!membership) return null
 
-  return { organizationId: project.organization_id, role: membership.role }
+  return { organizationId: project.organization_id, role: membership.role, projectUuid: (project as unknown as {id:string}).id }
 }
 
 export async function PATCH(request: Request, { params }: Ctx) {
@@ -52,7 +55,7 @@ export async function PATCH(request: Request, { params }: Ctx) {
   const { data, error } = await admin
     .from('projects')
     .update({ ...body, updated_at: new Date().toISOString() })
-    .eq('id', projectId)
+    .eq('id', membership.projectUuid)
     .select('id, title, status')
     .single()
 
@@ -77,7 +80,7 @@ export async function DELETE(_request: Request, { params }: Ctx) {
   const { error } = await admin
     .from('projects')
     .delete()
-    .eq('id', projectId)
+    .eq('id', membership.projectUuid)
 
   if (error) {
     console.error('[projects DELETE]', error.message)

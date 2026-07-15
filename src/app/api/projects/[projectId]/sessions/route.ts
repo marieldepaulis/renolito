@@ -30,13 +30,16 @@ export async function POST(request: Request, { params }: Ctx) {
 
   const admin = createAdminClient()
 
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  const col = UUID_RE.test(projectId) ? 'id' : 'slug'
   const { data: project } = await admin
     .from('projects')
-    .select('organization_id')
-    .eq('id', projectId)
+    .select('id, organization_id')
+    .eq(col, projectId)
     .single()
 
   if (!project) return NextResponse.json({ error: 'Proyecto no encontrado.' }, { status: 404 })
+  const resolvedProjectId = (project as unknown as { id: string }).id
 
   const { data: membership } = await admin
     .from('organization_members')
@@ -51,7 +54,7 @@ export async function POST(request: Request, { params }: Ctx) {
   const { data: session, error } = await admin
     .from('sessions')
     .insert({
-      project_id:       projectId,
+      project_id:       resolvedProjectId,
       organization_id:  (project as unknown as { organization_id: string }).organization_id,
       title:            body.title,
       scheduled_date:   body.scheduled_date,

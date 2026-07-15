@@ -20,20 +20,23 @@ export async function PATCH(request: Request, { params }: Ctx) {
   catch { return NextResponse.json({ error: 'Datos inválidos.' }, { status: 400 }) }
 
   const admin = createAdminClient()
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  const col = UUID_RE.test(projectId) ? 'id' : 'slug'
   const { data: project } = await admin
-    .from('projects').select('organization_id').eq('id', projectId).single()
+    .from('projects').select('id, organization_id').eq(col, projectId).single()
   if (!project) return NextResponse.json({ error: 'Proyecto no encontrado.' }, { status: 404 })
 
+  const p = project as unknown as { id: string; organization_id: string }
   const { data: membership } = await admin
     .from('organization_members').select('role')
-    .eq('organization_id', (project as unknown as { organization_id: string }).organization_id)
+    .eq('organization_id', p.organization_id)
     .eq('user_id', user.id).not('accepted_at', 'is', null).maybeSingle()
   if (!membership) return NextResponse.json({ error: 'Sin acceso.' }, { status: 403 })
 
   const { error } = await admin
     .from('projects')
     .update({ production_notes: body.production_notes, updated_at: new Date().toISOString() })
-    .eq('id', projectId)
+    .eq('id', p.id)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ success: true })

@@ -27,8 +27,10 @@ export async function PATCH(request: Request, { params }: Ctx) {
   catch { return NextResponse.json({ error: 'Datos inválidos.' }, { status: 400 }) }
 
   const admin = createAdminClient()
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  const col = UUID_RE.test(projectId) ? 'id' : 'slug'
   const { data: project } = await admin
-    .from('projects').select('organization_id').eq('id', projectId).single()
+    .from('projects').select('id, organization_id').eq(col, projectId).single()
   if (!project) return NextResponse.json({ error: 'Proyecto no encontrado.' }, { status: 404 })
 
   const { data: membership } = await admin
@@ -37,10 +39,11 @@ export async function PATCH(request: Request, { params }: Ctx) {
     .eq('user_id', user.id).not('accepted_at', 'is', null).maybeSingle()
   if (!membership) return NextResponse.json({ error: 'Sin acceso.' }, { status: 403 })
 
+  const resolvedProjectId = (project as unknown as { id: string }).id
   const { data, error } = await admin
     .from('sessions')
     .update({ ...body, updated_at: new Date().toISOString() })
-    .eq('id', sessionId).eq('project_id', projectId)
+    .eq('id', sessionId).eq('project_id', resolvedProjectId)
     .select('id').single()
 
   if (error) { console.error('[sessions PATCH]', error.message); return NextResponse.json({ error: error.message }, { status: 500 }) }
@@ -54,8 +57,10 @@ export async function DELETE(_req: Request, { params }: Ctx) {
   if (!user) return NextResponse.json({ error: 'No autenticado.' }, { status: 401 })
 
   const admin = createAdminClient()
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  const col = UUID_RE.test(projectId) ? 'id' : 'slug'
   const { data: project } = await admin
-    .from('projects').select('organization_id').eq('id', projectId).single()
+    .from('projects').select('id, organization_id').eq(col, projectId).single()
   if (!project) return NextResponse.json({ error: 'Proyecto no encontrado.' }, { status: 404 })
 
   const { data: membership } = await admin
@@ -64,7 +69,8 @@ export async function DELETE(_req: Request, { params }: Ctx) {
     .eq('user_id', user.id).not('accepted_at', 'is', null).maybeSingle()
   if (!membership) return NextResponse.json({ error: 'Sin acceso.' }, { status: 403 })
 
-  const { error } = await admin.from('sessions').delete().eq('id', sessionId).eq('project_id', projectId)
+  const resolvedId = (project as unknown as { id: string }).id
+  const { error } = await admin.from('sessions').delete().eq('id', sessionId).eq('project_id', resolvedId)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ success: true })
 }
