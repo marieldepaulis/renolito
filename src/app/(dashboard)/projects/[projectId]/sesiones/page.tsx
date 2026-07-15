@@ -36,7 +36,7 @@ export default async function SesionesPage({ params }: Props) {
   const { data: sessions } = await supabase
     .from('sessions')
     .select('id, title, scheduled_date, start_time, end_time, location, status')
-    .eq('project_id', projectId)
+    .eq('project_id', project.id)
     .order('scheduled_date')
 
   return (

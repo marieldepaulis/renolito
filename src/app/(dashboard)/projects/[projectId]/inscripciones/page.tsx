@@ -39,13 +39,13 @@ export default async function InscripcionesPage({ params }: Props) {
       submitted_at, assigned_session_id, producer_notes,
       sessions!assigned_session_id(title, scheduled_date)
     `)
-    .eq('project_id', projectId)
+    .eq('project_id', project.id)
     .order('submitted_at', { ascending: false })
 
   const { data: sessions } = await supabase
     .from('sessions')
     .select('id, title, scheduled_date')
-    .eq('project_id', projectId)
+    .eq('project_id', project.id)
     .order('scheduled_date')
 
   return (

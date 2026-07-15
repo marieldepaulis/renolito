@@ -52,7 +52,7 @@ export default async function GestionInternaPage({ params }: Props) {
   const { data: sessions } = await admin
     .from('sessions')
     .select('id, title, scheduled_date')
-    .eq('project_id', projectId)
+    .eq('project_id', project.id)
     .order('scheduled_date')
 
   // Fetch production_notes separately — column added in migration 003 (may not exist yet)
