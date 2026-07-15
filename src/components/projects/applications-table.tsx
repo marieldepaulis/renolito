@@ -83,58 +83,102 @@ export function ApplicationsTable({ applications: initial, projectId }: Props) {
   }
 
   return (
-    <div className="overflow-hidden rounded-lg border">
-      <table className="w-full text-sm">
-        <thead className="border-b bg-muted/40">
-          <tr>
-            <th className="px-4 py-3 text-left font-medium text-muted-foreground">Nombre</th>
-            <th className="px-4 py-3 text-left font-medium text-muted-foreground">Email</th>
-            <th className="px-4 py-3 text-left font-medium text-muted-foreground">Sesión</th>
-            <th className="px-4 py-3 text-left font-medium text-muted-foreground">Estado</th>
-            <th className="px-4 py-3 text-left font-medium text-muted-foreground">Fecha</th>
-            <th className="px-4 py-3 text-left font-medium text-muted-foreground">Acciones</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y">
-          {apps.map((app) => {
-            const nextStatuses = NEXT_STATUSES[app.status] ?? []
-            return (
-              <tr key={app.id} className="hover:bg-muted/20">
-                <td className="px-4 py-3 font-medium">{app.guest_name}</td>
-                <td className="px-4 py-3 text-muted-foreground">{app.guest_email}</td>
-                <td className="px-4 py-3 text-muted-foreground">
-                  {(app.sessions as { title: string } | null)?.title ?? '—'}
-                </td>
-                <td className="px-4 py-3">
-                  <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[app.status]}`}>
-                    {STATUS_LABELS[app.status]}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-muted-foreground">
-                  {formatDate(app.submitted_at)}
-                </td>
-                <td className="px-4 py-3">
-                  {nextStatuses.length > 0 && (
-                    <div className="flex flex-wrap gap-1">
-                      {nextStatuses.map((s) => (
-                        <button
-                          key={s}
-                          type="button"
-                          disabled={updating === app.id}
-                          onClick={() => updateStatus(app.id, s)}
-                          className="rounded border px-2 py-0.5 text-xs font-medium transition-colors hover:bg-accent disabled:opacity-50"
-                        >
-                          {STATUS_LABELS[s]}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </td>
+    <>
+      {/* Desktop table */}
+      <div className="hidden overflow-hidden rounded-lg border sm:block">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="border-b bg-muted/40">
+              <tr>
+                <th className="px-4 py-3 text-left font-medium text-muted-foreground">Nombre</th>
+                <th className="px-4 py-3 text-left font-medium text-muted-foreground">Email</th>
+                <th className="px-4 py-3 text-left font-medium text-muted-foreground">Sesión</th>
+                <th className="px-4 py-3 text-left font-medium text-muted-foreground">Estado</th>
+                <th className="px-4 py-3 text-left font-medium text-muted-foreground">Fecha</th>
+                <th className="px-4 py-3 text-left font-medium text-muted-foreground">Acciones</th>
               </tr>
-            )
-          })}
-        </tbody>
-      </table>
-    </div>
+            </thead>
+            <tbody className="divide-y">
+              {apps.map((app) => {
+                const nextStatuses = NEXT_STATUSES[app.status] ?? []
+                return (
+                  <tr key={app.id} className="hover:bg-muted/20">
+                    <td className="px-4 py-3 font-medium">{app.guest_name}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{app.guest_email}</td>
+                    <td className="px-4 py-3 text-muted-foreground">
+                      {(app.sessions as { title: string } | null)?.title ?? '—'}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[app.status]}`}>
+                        {STATUS_LABELS[app.status]}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground">
+                      {formatDate(app.submitted_at)}
+                    </td>
+                    <td className="px-4 py-3">
+                      {nextStatuses.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {nextStatuses.map((s) => (
+                            <button
+                              key={s}
+                              type="button"
+                              disabled={updating === app.id}
+                              onClick={() => updateStatus(app.id, s)}
+                              className="rounded border px-2 py-0.5 text-xs font-medium transition-colors hover:bg-accent disabled:opacity-50"
+                            >
+                              {STATUS_LABELS[s]}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Mobile card list */}
+      <div className="space-y-3 sm:hidden">
+        {apps.map((app) => {
+          const nextStatuses = NEXT_STATUSES[app.status] ?? []
+          return (
+            <div key={app.id} className="rounded-lg border bg-card p-4 space-y-3">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="font-medium truncate">{app.guest_name}</p>
+                  <p className="text-xs text-muted-foreground truncate">{app.guest_email}</p>
+                </div>
+                <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[app.status]}`}>
+                  {STATUS_LABELS[app.status]}
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                <span>Sesión: {(app.sessions as { title: string } | null)?.title ?? '—'}</span>
+                <span>{formatDate(app.submitted_at)}</span>
+              </div>
+              {nextStatuses.length > 0 && (
+                <div className="flex flex-wrap gap-1 pt-1 border-t">
+                  {nextStatuses.map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      disabled={updating === app.id}
+                      onClick={() => updateStatus(app.id, s)}
+                      className="rounded border px-2 py-1 text-xs font-medium transition-colors hover:bg-accent disabled:opacity-50"
+                    >
+                      {STATUS_LABELS[s]}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </>
   )
 }

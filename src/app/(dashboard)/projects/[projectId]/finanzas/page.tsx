@@ -190,17 +190,19 @@ export default async function ProjectFinanzasPage({ params }: Props) {
               <div key={s.id} className="rounded-lg border bg-card overflow-hidden">
                 {/* Session header */}
                 <div className="flex items-center justify-between gap-3 px-5 py-3.5 border-b bg-muted/30">
-                  <div className="flex items-center gap-2 min-w-0">
+                  <div className="flex min-w-0 items-center gap-2">
                     <CalendarDays className="size-4 shrink-0 text-muted-foreground" />
-                    <Link
-                      href={`/projects/${projectId}/sesiones/${s.id}`}
-                      className="truncate text-sm font-medium hover:underline"
-                    >
-                      {s.title}
-                    </Link>
-                    <span className="shrink-0 text-xs text-muted-foreground">
-                      {new Date(s.scheduled_date + 'T12:00:00').toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}
-                    </span>
+                    <div className="min-w-0">
+                      <Link
+                        href={`/projects/${projectId}/sesiones/${s.id}`}
+                        className="block truncate text-sm font-medium hover:underline"
+                      >
+                        {s.title}
+                      </Link>
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(s.scheduled_date + 'T12:00:00').toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      </span>
+                    </div>
                   </div>
                   {s.expenses.length > 0 && (
                     <span className="shrink-0 font-semibold text-sm">{fmt(s.total, s.currency)}</span>

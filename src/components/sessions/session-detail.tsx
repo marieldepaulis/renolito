@@ -109,16 +109,16 @@ export function SessionDetail({ projectId, session, backHref }: Props) {
     <>
       {/* Info + actions */}
       <div className="space-y-5">
-        <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-start justify-between gap-3 flex-wrap">
           <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${STATUS_COLORS[status]}`}>
             {STATUS_LABEL[status]}
           </span>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {nextStatus && (
               <button type="button" onClick={() => handleStatusChange(nextStatus)} disabled={statusLoading}
                 className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-accent disabled:opacity-50">
                 {statusLoading ? <Loader2 className="size-3.5 animate-spin" /> : <CheckCircle2 className="size-3.5" />}
-                {nextStatus === 'in_progress' ? 'Iniciar sesión' : 'Marcar completada'}
+                {nextStatus === 'in_progress' ? 'Iniciar' : 'Completar'}
               </button>
             )}
             <button type="button" onClick={() => setEditOpen(true)}
@@ -162,20 +162,18 @@ export function SessionDetail({ projectId, session, backHref }: Props) {
                 <label className="text-sm font-medium">Nombre *</label>
                 <input type="text" value={title} onChange={e => setTitle(e.target.value)} className={base} />
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium">Fecha *</label>
                   <input type="date" value={scheduledDate} onChange={e => setScheduledDate(e.target.value)} className={base} />
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-medium">Inicio</label>
-                    <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className={base} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-medium">Fin</label>
-                    <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className={base} />
-                  </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">Inicio</label>
+                  <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className={base} />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">Fin</label>
+                  <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className={base} />
                 </div>
               </div>
               <div className="space-y-1.5">
